@@ -42,7 +42,10 @@ test("server-renders the finished Safe School game", async () => {
 
   const html = await response.text();
   assert.match(html, /<html lang="ko">/i);
-  assert.match(html, /<title>학교 안전 탈출작전<\/title>/i);
+  assert.match(
+    html,
+    /<title>학교 안전 탈출작전 \| 모바일 안전교육 방탈출 게임<\/title>/i,
+  );
   assert.match(html, /학교 안전/);
   assert.match(html, /탈출작전/);
   assert.match(html, /미션 시작/);
@@ -169,11 +172,13 @@ test("includes mobile game controls for exploration and OX play", async () => {
 });
 
 test("has a repository-safe GitHub Pages build", async () => {
-  const [page, entry, config, workflow] = await Promise.all([
+  const [page, entry, config, workflow, staticIndex, layout] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../pages-entry.tsx", import.meta.url), "utf8"),
     readFile(new URL("../vite.pages.config.ts", import.meta.url), "utf8"),
     readFile(new URL("../.github/workflows/pages.yml", import.meta.url), "utf8"),
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   ]);
 
   assert.doesNotMatch(page, /src="\/assets\//);
@@ -182,4 +187,15 @@ test("has a repository-safe GitHub Pages build", async () => {
   assert.match(config, /outDir:\s*"pages-dist"/);
   assert.match(workflow, /actions\/deploy-pages@v4/);
   assert.match(workflow, /VITE_BASE_PATH: \/safe-school-game\//);
+  assert.match(staticIndex, /property="og:title"/);
+  assert.match(staticIndex, /property="og:description"/);
+  assert.match(staticIndex, /property="og:image"/);
+  assert.match(staticIndex, /property="og:image:width" content="1672"/);
+  assert.match(staticIndex, /name="twitter:card" content="summary_large_image"/);
+  assert.match(
+    staticIndex,
+    /https:\/\/kimju1416\.github\.io\/safe-school-game\/og\.png/,
+  );
+  assert.match(layout, /siteName: "학교 안전 탈출작전"/);
+  assert.match(layout, /max-image-preview/);
 });
