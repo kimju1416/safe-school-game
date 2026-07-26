@@ -556,8 +556,8 @@ export default function Home() {
       const delta = Math.min(32, now - previous);
       previous = now;
       setPlayerPosition((position) => ({
-        x: Math.max(4, Math.min(96, position.x + joystickVector.x * delta * 0.085)),
-        y: Math.max(6, Math.min(92, position.y + joystickVector.y * delta * 0.085)),
+        x: Math.max(4, Math.min(96, position.x + joystickVector.x * delta * 0.016)),
+        y: Math.max(6, Math.min(92, position.y + joystickVector.y * delta * 0.016)),
       }));
       frame = requestAnimationFrame(move);
     };
