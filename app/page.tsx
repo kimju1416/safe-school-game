@@ -15,8 +15,10 @@ type Phase =
   | "classroom-quiz"
   | "corridor"
   | "traffic"
+  | "traffic-quiz"
   | "gym"
   | "pool"
+  | "pool-sequence"
   | "lab"
   | "final";
 
@@ -191,9 +193,10 @@ const trafficQuiz: OXQuestion[] = [
     explanation: "거리가 짧아도 넘어지거나 충돌할 수 있으므로 몸에 맞는 안전모를 꼭 착용해요.",
   },
   {
-    statement: "주차된 차 사이에서는 천천히 건너면 안전하다.",
-    answer: "X",
-    explanation: "차량에 가려 서로 보이지 않으므로 횡단보도처럼 시야가 확보된 곳에서 건너요.",
+    statement: "주차된 차 사이에서는 천천히 걷더라도 운전자와 보행자의 시야가 가려질 수 있다.",
+    answer: "O",
+    explanation:
+      "맞아요. 속도를 줄여도 차에 가려 서로 보이지 않을 수 있으므로 시야가 확보된 횡단보도로 건너요.",
   },
 ];
 
@@ -209,14 +212,14 @@ const gymHazards = [
     lesson: "무거운 매트와 운동기구는 쓰러지지 않게 정해진 자리에 단단히 정리해요.",
   },
   {
-    id: "rope-running",
-    label: "준비운동 없이 달리기",
-    icon: "🤸",
+    id: "floor-rope",
+    label: "바닥에 방치된 줄넘기",
+    icon: "➰",
     x: 25,
     y: 47,
     w: 25,
     h: 35,
-    lesson: "운동 전에는 몸 상태를 확인하고 충분히 준비운동을 해요. 바닥의 줄도 먼저 치워요.",
+    lesson: "사용하지 않는 줄넘기는 바로 정리해 밟거나 걸려 넘어지는 사고를 막아요.",
   },
   {
     id: "scattered-balls",
@@ -388,8 +391,10 @@ const phaseOrder: Phase[] = [
   "classroom-quiz",
   "corridor",
   "traffic",
+  "traffic-quiz",
   "gym",
   "pool",
+  "pool-sequence",
   "lab",
   "final",
 ];
@@ -431,6 +436,13 @@ const musicThemes: Record<Exclude<Phase, "intro">, MusicTheme> = {
     volume: 0.007,
     wave: "triangle",
   },
+  "traffic-quiz": {
+    notes: [392, 493.88, 587.33, 523.25, 440, 554.37],
+    interval: 500,
+    duration: 0.68,
+    volume: 0.007,
+    wave: "square",
+  },
   gym: {
     notes: [329.63, 392, 493.88, 392, 369.99, 440, 523.25, 440],
     interval: 410,
@@ -442,6 +454,13 @@ const musicThemes: Record<Exclude<Phase, "intro">, MusicTheme> = {
     notes: [349.23, 440, 523.25, 440, 392, 493.88, 587.33, 493.88],
     interval: 790,
     duration: 1.35,
+    volume: 0.008,
+    wave: "sine",
+  },
+  "pool-sequence": {
+    notes: [440, 523.25, 659.25, 523.25, 493.88, 587.33],
+    interval: 620,
+    duration: 0.9,
     volume: 0.008,
     wave: "sine",
   },
@@ -611,6 +630,9 @@ export default function Home() {
   const [certificateOpen, setCertificateOpen] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [completionDate, setCompletionDate] = useState("");
+  const [certificateSaveState, setCertificateSaveState] = useState<
+    "idle" | "saving" | "saved"
+  >("idle");
   const [playerPosition, setPlayerPosition] = useState({ x: 50, y: 70 });
   const [joystickVector, setJoystickVector] = useState<JoystickVector>({ x: 0, y: 0 });
   const [controlsMinimized, setControlsMinimized] = useState(false);
@@ -625,11 +647,11 @@ export default function Home() {
       ? 1
       : phase === "corridor"
         ? 2
-        : phase === "traffic"
+        : phase === "traffic" || phase === "traffic-quiz"
           ? 3
           : phase === "gym"
             ? 4
-            : phase === "pool"
+            : phase === "pool" || phase === "pool-sequence"
               ? 5
               : phase === "lab"
                 ? 6
@@ -652,9 +674,9 @@ export default function Home() {
         ? "ox"
         : phase === "corridor"
           ? "explore"
-          : phase === "traffic" && trafficFound.length < trafficSpots.length
+          : phase === "traffic"
             ? "explore"
-            : phase === "traffic" && !trafficQuizDone
+            : phase === "traffic-quiz"
               ? "ox"
               : phase === "gym" && gymFound.length < gymHazards.length
                 ? "explore"
@@ -743,8 +765,8 @@ export default function Home() {
       const delta = Math.min(32, now - previous);
       previous = now;
       setPlayerPosition((position) => ({
-        x: Math.max(4, Math.min(96, position.x + joystickVector.x * delta * 0.034)),
-        y: Math.max(6, Math.min(92, position.y + joystickVector.y * delta * 0.034)),
+        x: Math.max(4, Math.min(96, position.x + joystickVector.x * delta * 0.052)),
+        y: Math.max(6, Math.min(92, position.y + joystickVector.y * delta * 0.052)),
       }));
       frame = requestAnimationFrame(move);
     };
@@ -914,6 +936,7 @@ export default function Home() {
     setCertificateOpen(false);
     setStudentName("");
     setCompletionDate("");
+    setCertificateSaveState("idle");
   }
 
   function toggleFullscreen() {
@@ -1018,16 +1041,6 @@ export default function Home() {
     });
   }
 
-  function enterTraffic() {
-    setPhase("traffic");
-    playTone("click");
-    announce({
-      title: "미션 3 · 통학로",
-      message: "등하교 길과 자전거 이용 중 위험행동 3개를 찾아주세요.",
-      tone: "info",
-    });
-  }
-
   function findTrafficSpot(id: string) {
     if (trafficFound.includes(id)) return;
     const spot = trafficSpots.find((item) => item.id === id);
@@ -1076,16 +1089,6 @@ export default function Home() {
     }
   }
 
-  function enterGym() {
-    setPhase("gym");
-    playTone("click");
-    announce({
-      title: "미션 4 · 체육관",
-      message: "운동을 시작하기 전 체육관의 위험요소 4개를 찾아주세요.",
-      tone: "info",
-    });
-  }
-
   function findGymHazard(id: string) {
     if (gymFound.includes(id)) return;
     const hazard = gymHazards.find((item) => item.id === id);
@@ -1097,16 +1100,6 @@ export default function Home() {
       title: `${hazard.icon} ${hazard.label} 발견!`,
       message: hazard.lesson,
       tone: "good",
-    });
-  }
-
-  function enterPool() {
-    setPhase("pool");
-    playTone("click");
-    announce({
-      title: "미션 5 · 학교 수영장",
-      message: "물가의 위험행동 4개를 찾고 안전한 입수 순서를 완성하세요.",
-      tone: "info",
     });
   }
 
@@ -1153,16 +1146,6 @@ export default function Home() {
     }
   }
 
-  function enterLab() {
-    setPhase("lab");
-    playTone("click");
-    announce({
-      title: "미션 6 · 과학실",
-      message: "네 개의 안전 단서를 찾아 잠긴 캐비닛의 암호를 해제하세요.",
-      tone: "info",
-    });
-  }
-
   function findLabClue(id: string) {
     if (labFound.includes(id)) return;
     const clue = labClues.find((item) => item.id === id);
@@ -1194,7 +1177,7 @@ export default function Home() {
       playTone("win");
       announce({
         title: "안전 보관함 잠금 해제!",
-        message: "보호구와 위험요소를 올바른 순서로 확인했어요.",
+        message: "보호구와 위험요소를 올바른 순서로 확인했어요. 곧 운동장으로 이동합니다.",
         tone: "good",
       });
     } else {
@@ -1209,6 +1192,171 @@ export default function Home() {
     }
   }
 
+  function downloadCertificateImage() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1600;
+    canvas.height = 1131;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    setCertificateSaveState("saving");
+    const name = studentName.trim() || "안전 수호대";
+    const date = completionDate || "미션 완료일";
+    const certificateId = `SS-${String(score).padStart(3, "0")}-${String(elapsed).padStart(4, "0")}`;
+
+    const paper = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+    paper.addColorStop(0, "#fffef8");
+    paper.addColorStop(1, "#f3ead2");
+    context.fillStyle = paper;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    context.strokeStyle = "#bd9140";
+    context.lineWidth = 6;
+    context.strokeRect(34, 34, 1532, 1063);
+    context.strokeStyle = "#5f8f88";
+    context.lineWidth = 2;
+    context.strokeRect(52, 52, 1496, 1027);
+
+    context.fillStyle = "#54707c";
+    context.font = '800 22px "Malgun Gothic", sans-serif';
+    context.textAlign = "left";
+    context.fillText("SAFE SCHOOL CERTIFICATE", 104, 116);
+    context.fillStyle = "#1c5d5b";
+    context.textAlign = "right";
+    context.fillText(certificateId, 1496, 116);
+
+    context.save();
+    context.translate(800, 205);
+    context.beginPath();
+    context.moveTo(0, -72);
+    context.lineTo(70, -43);
+    context.lineTo(60, 45);
+    context.lineTo(0, 88);
+    context.lineTo(-60, 45);
+    context.lineTo(-70, -43);
+    context.closePath();
+    const sealGradient = context.createLinearGradient(-60, -60, 65, 80);
+    sealGradient.addColorStop(0, "#ffe9ad");
+    sealGradient.addColorStop(1, "#d1a044");
+    context.fillStyle = sealGradient;
+    context.fill();
+    context.fillStyle = "#553b10";
+    context.textAlign = "center";
+    context.font = '900 46px "Malgun Gothic", sans-serif';
+    context.fillText("★", 0, 5);
+    context.font = '900 15px "Malgun Gothic", sans-serif';
+    context.fillText("6 ZONES", 0, 38);
+    context.restore();
+
+    context.textAlign = "center";
+    context.fillStyle = "#29716c";
+    context.font = '900 24px "Malgun Gothic", sans-serif';
+    context.fillText("학 교  안 전 교 육  이 수 증", 800, 338);
+    context.fillStyle = "#142f44";
+    context.font = '700 68px "Malgun Gothic", sans-serif';
+    context.fillText(name, 800, 430);
+    const nameWidth = context.measureText(name).width;
+    context.font = '500 26px "Malgun Gothic", sans-serif';
+    context.fillText("학생", 800 + nameWidth / 2 + 45, 430);
+
+    context.fillStyle = "#526977";
+    context.font = '400 24px "Malgun Gothic", sans-serif';
+    context.fillText(
+      "위 학생은 교실·복도·통학로·체육관·수영장·과학실의 여섯 가지 안전 미션을",
+      800,
+      495,
+    );
+    context.fillText("성실히 해결하였기에 이 증서를 수여합니다.", 800, 535);
+
+    const badgeWidth = 210;
+    const badgeGap = 20;
+    const badgeStart = (1600 - (badgeWidth * 6 + badgeGap * 5)) / 2;
+    rewardBadges.forEach((badge, index) => {
+      const x = badgeStart + index * (badgeWidth + badgeGap);
+      const y = 605;
+      context.beginPath();
+      context.roundRect(x, y, badgeWidth, 142, 20);
+      context.fillStyle = "rgba(255,255,255,.72)";
+      context.fill();
+      context.strokeStyle = "rgba(41,113,108,.28)";
+      context.lineWidth = 2;
+      context.stroke();
+      context.fillStyle = ["#c99538", "#7664cb", "#2b9d84", "#76a839", "#4389c6", "#d85e58"][
+        index
+      ];
+      context.font = '900 34px "Malgun Gothic", sans-serif';
+      context.fillText(badge.icon, x + badgeWidth / 2, y + 54);
+      context.fillStyle = "#284c57";
+      context.font = '800 19px "Malgun Gothic", sans-serif';
+      context.fillText(badge.subject, x + badgeWidth / 2, y + 91);
+      context.fillStyle = "#6b7f87";
+      context.font = '600 15px "Malgun Gothic", sans-serif';
+      context.fillText(badge.title, x + badgeWidth / 2, y + 119);
+    });
+
+    context.strokeStyle = "rgba(23,75,76,.22)";
+    context.beginPath();
+    context.moveTo(130, 830);
+    context.lineTo(1470, 830);
+    context.stroke();
+
+    context.textAlign = "left";
+    context.fillStyle = "#78909a";
+    context.font = '600 18px "Malgun Gothic", sans-serif';
+    context.fillText("이수일", 135, 890);
+    context.fillStyle = "#233f50";
+    context.font = '800 25px "Malgun Gothic", sans-serif';
+    context.fillText(date, 135, 930);
+
+    context.textAlign = "center";
+    context.fillStyle = "#78909a";
+    context.font = '600 18px "Malgun Gothic", sans-serif';
+    context.fillText("최종 기록", 800, 890);
+    context.fillStyle = "#233f50";
+    context.font = '800 25px "Malgun Gothic", sans-serif';
+    context.fillText(`${score}/120점 · ${formatTime(elapsed)}`, 800, 930);
+
+    context.textAlign = "right";
+    context.fillStyle = "#78909a";
+    context.font = '600 18px "Malgun Gothic", sans-serif';
+    context.fillText("학교 안전교육", 1460, 890);
+    context.fillStyle = "#233f50";
+    context.font = '800 25px "Malgun Gothic", sans-serif';
+    context.fillText("세이프스쿨 안전 수호대", 1460, 930);
+
+    context.beginPath();
+    context.arc(1395, 926, 55, 0, Math.PI * 2);
+    context.strokeStyle = "rgba(181,64,51,.65)";
+    context.lineWidth = 5;
+    context.stroke();
+    context.fillStyle = "rgba(181,64,51,.72)";
+    context.textAlign = "center";
+    context.font = '800 22px Georgia, serif';
+    context.fillText("安全", 1395, 934);
+
+    context.fillStyle = "#81919a";
+    context.font = '500 16px "Malgun Gothic", sans-serif';
+    context.fillText("학교 안전 탈출작전 · 안전교육 이수 확인", 800, 1035);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setCertificateSaveState("idle");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeName = name.replace(/[\\/:*?"<>|]/g, "-");
+      link.href = url;
+      link.download = `학교-안전교육-이수증-${safeName}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setCertificateSaveState("saved");
+      window.setTimeout(() => setCertificateSaveState("idle"), 2400);
+    }, "image/png");
+  }
+
   function vibrate(pattern: number | number[]) {
     if ("vibrate" in navigator) navigator.vibrate(pattern);
   }
@@ -1216,7 +1364,7 @@ export default function Home() {
   function mobilePrimaryAction() {
     if (mobileControlMode === "ox") {
       if (phase === "classroom-quiz") answerClassQuiz("O");
-      if (phase === "traffic") answerTrafficQuiz("O");
+      if (phase === "traffic-quiz") answerTrafficQuiz("O");
       vibrate(20);
       return;
     }
@@ -1247,7 +1395,7 @@ export default function Home() {
   function mobileSecondaryAction() {
     if (mobileControlMode === "ox") {
       if (phase === "classroom-quiz") answerClassQuiz("X");
-      if (phase === "traffic") answerTrafficQuiz("X");
+      if (phase === "traffic-quiz") answerTrafficQuiz("X");
       vibrate(20);
       return;
     }
@@ -1273,6 +1421,71 @@ export default function Home() {
     setPhase("final");
     playTone("win");
   }
+
+  useEffect(() => {
+    let nextPhase: Phase | null = null;
+    let nextNotice: { title: string; message: string } | null = null;
+
+    if (phase === "classroom" && classFound.length === classroomHazards.length) {
+      nextPhase = "classroom-quiz";
+    } else if (phase === "corridor" && corridorFound.length === corridorHazards.length) {
+      nextPhase = "traffic";
+      nextNotice = {
+        title: "미션 3 · 통학로",
+        message: "등하교 길과 자전거 이용 중 위험행동 3개를 찾아주세요.",
+      };
+    } else if (phase === "traffic" && trafficFound.length === trafficSpots.length) {
+      nextPhase = "traffic-quiz";
+    } else if (phase === "traffic-quiz" && trafficQuizDone) {
+      nextPhase = "gym";
+      nextNotice = {
+        title: "미션 4 · 체육관",
+        message: "체육관 바닥과 운동기구에 숨은 위험요소 4개를 찾아주세요.",
+      };
+    } else if (phase === "gym" && gymFound.length === gymHazards.length) {
+      nextPhase = "pool";
+      nextNotice = {
+        title: "미션 5 · 학교 수영장",
+        message: "물가의 위험행동 4개를 찾고 안전한 입수 순서를 완성하세요.",
+      };
+    } else if (phase === "pool" && poolFound.length === poolSpots.length) {
+      nextPhase = "pool-sequence";
+    } else if (phase === "pool-sequence" && poolSequenceDone) {
+      nextPhase = "lab";
+      nextNotice = {
+        title: "미션 6 · 과학실",
+        message: "네 개의 안전 단서를 찾아 잠긴 캐비닛의 암호를 해제하세요.",
+      };
+    } else if (phase === "lab" && labUnlocked) {
+      nextPhase = "final";
+    }
+
+    if (!nextPhase) return;
+    const delay = nextPhase === "classroom-quiz" || nextPhase === "traffic-quiz" ? 1350 : 1650;
+    const timer = window.setTimeout(() => {
+      setToast(null);
+      if (nextPhase === "final") {
+        finishGame();
+        return;
+      }
+      setPhase(nextPhase);
+      playTone("click");
+      if (nextNotice) {
+        announce({ ...nextNotice, tone: "info" }, 2600);
+      }
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [
+    phase,
+    classFound.length,
+    corridorFound.length,
+    trafficFound.length,
+    trafficQuizDone,
+    gymFound.length,
+    poolFound.length,
+    poolSequenceDone,
+    labUnlocked,
+  ]);
 
   return (
     <main
@@ -1353,12 +1566,6 @@ export default function Home() {
           />
           <div className="intro-vignette" />
           <div className="intro-topbar">
-            <div className="intro-logo">
-              <span className="brand-mark large" aria-hidden="true">
-                S
-              </span>
-              <span>SAFE SCHOOL PROJECT</span>
-            </div>
             <button className="glass-button" type="button" onClick={() => setTeacherOpen(true)}>
               교사용 해설
             </button>
@@ -1505,16 +1712,14 @@ export default function Home() {
             </div>
 
             {classFound.length === classroomHazards.length ? (
-              <button
-                className="primary-button panel-action"
-                type="button"
-                onClick={() => {
-                  setPhase("classroom-quiz");
-                  playTone("click");
-                }}
-              >
-                OX 관문 열기 <span aria-hidden="true">→</span>
-              </button>
+              <div className="auto-next-card" role="status">
+                <span aria-hidden="true">✓</span>
+                <div>
+                  <b>위험요소 5개 발견 완료</b>
+                  <small>OX 퀴즈가 자동으로 열립니다.</small>
+                </div>
+                <i aria-hidden="true" />
+              </div>
             ) : (
               <button
                 className="hint-button"
@@ -1697,9 +1902,9 @@ export default function Home() {
                 <small>MISSION 02 CLEAR</small>
                 <h3>질서의 발걸음을 획득했어요</h3>
                 <p>복도에서는 천천히, 오른쪽으로 걷고 대피 통로는 항상 비워 둬요.</p>
-                <button className="primary-button panel-action" type="button" onClick={enterTraffic}>
-                  통학로로 이동 <span aria-hidden="true">→</span>
-                </button>
+                <div className="auto-moving">
+                  통학로로 자동 이동 중 <i aria-hidden="true" />
+                </div>
               </div>
             )}
           </aside>
@@ -1805,76 +2010,99 @@ export default function Home() {
                   <b>{hints}개 남음</b>
                 </button>
               </>
-            ) : !trafficQuizDone ? (
-              <>
-                <div className="decision-header">
-                  <div className="traffic-light-dot" aria-hidden="true" />
+            ) : (
+              <div className="mission-cleared-card">
+                <span aria-hidden="true">✦</span>
+                <small>SAFETY CHECK</small>
+                <h3>교통안전 OX를 준비해요</h3>
+                <p>통학로 위험요소를 모두 찾았습니다.</p>
+                <div className="auto-moving">
+                  OX 퀴즈 자동 실행 중 <i aria-hidden="true" />
+                </div>
+              </div>
+            )}
+          </aside>
+        </section>
+      )}
+
+      {phase === "traffic-quiz" && (
+        <section className="quiz-screen traffic-quiz-screen">
+          <img
+            className="full-bleed-image blurred"
+            src="assets/traffic-school-zone.png"
+            alt=""
+            aria-hidden="true"
+          />
+          <div className="quiz-backdrop traffic-quiz-backdrop" />
+          {!trafficQuizDone ? (
+            <div className="quiz-card">
+              <div className="quiz-card-top">
+                <span className="chapter-label coral">TRAFFIC SAFETY · OX</span>
+                <span>
+                  {trafficQuizIndex + 1} / {trafficQuiz.length}
+                </span>
+              </div>
+              <div className="quiz-progress">
+                <i
+                  style={{
+                    width: `${((trafficQuizIndex + 1) / trafficQuiz.length) * 100}%`,
+                  }}
+                />
+              </div>
+              <div className="quiz-symbol traffic-symbol" aria-hidden="true">
+                신호
+              </div>
+              <h2>{trafficQuiz[trafficQuizIndex].statement}</h2>
+              <p>맞다고 생각하면 O, 틀리다고 생각하면 X를 선택하세요.</p>
+              <div className="ox-buttons">
+                <button
+                  type="button"
+                  className="ox-button o"
+                  onClick={() => answerTrafficQuiz("O")}
+                  disabled={trafficQuizLocked}
+                >
+                  <b>O</b>
+                  <span>맞아요</span>
+                </button>
+                <button
+                  type="button"
+                  className="ox-button x"
+                  onClick={() => answerTrafficQuiz("X")}
+                  disabled={trafficQuizLocked}
+                >
+                  <b>X</b>
+                  <span>아니에요</span>
+                </button>
+              </div>
+              {trafficFeedback && (
+                <div
+                  className={cx(
+                    "inline-feedback",
+                    trafficFeedback.correct ? "correct" : "incorrect",
+                  )}
+                  role="status"
+                >
+                  <span aria-hidden="true">{trafficFeedback.correct ? "✓" : "!"}</span>
                   <div>
-                    <span className="panel-label">교통안전 OX</span>
-                    <strong>
-                      질문 {trafficQuizIndex + 1}
-                      <small> / {trafficQuiz.length}</small>
-                    </strong>
-                  </div>
-                </div>
-                <div className="decision-card traffic-card">
-                  <span aria-hidden="true">판단</span>
-                  <h3>{trafficQuiz[trafficQuizIndex].statement}</h3>
-                </div>
-                <div className="compact-ox">
-                  <button
-                    type="button"
-                    onClick={() => answerTrafficQuiz("O")}
-                    disabled={trafficQuizLocked}
-                  >
-                    <b>O</b>
-                    맞다
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => answerTrafficQuiz("X")}
-                    disabled={trafficQuizLocked}
-                  >
-                    <b>X</b>
-                    아니다
-                  </button>
-                </div>
-                {trafficFeedback && (
-                  <div
-                    className={cx(
-                      "inline-feedback compact",
-                      trafficFeedback.correct ? "correct" : "incorrect",
-                    )}
-                    role="status"
-                  >
-                    <span aria-hidden="true">{trafficFeedback.correct ? "✓" : "!"}</span>
+                    <b>{trafficFeedback.correct ? "정확해요!" : "다시 살펴봐요"}</b>
                     <p>{trafficFeedback.text}</p>
                   </div>
-                )}
-                <div className="question-dots" aria-hidden="true">
-                  {trafficQuiz.map((_, index) => (
-                    <i
-                      key={index}
-                      className={cx(
-                        index === trafficQuizIndex && "active",
-                        index < trafficQuizIndex && "done",
-                      )}
-                    />
-                  ))}
                 </div>
-              </>
-            ) : (
+              )}
+            </div>
+          ) : (
+            <div className="quiz-card quiz-complete-card">
               <div className="mission-cleared-card">
                 <span aria-hidden="true">✦</span>
                 <small>MISSION 03 CLEAR</small>
                 <h3>통학 나침반을 획득했어요</h3>
-                <p>스마트폰은 넣고, 안전모를 쓰고, 횡단보도에서는 자전거를 끌고 건너요.</p>
-                <button className="primary-button panel-action" type="button" onClick={enterGym}>
-                  체육관으로 이동 <span aria-hidden="true">→</span>
-                </button>
+                <p>스마트폰은 넣고, 안전모를 쓰고, 시야가 확보된 횡단보도를 이용해요.</p>
+                <div className="auto-moving">
+                  체육관으로 자동 이동 중 <i aria-hidden="true" />
+                </div>
               </div>
-            )}
-          </aside>
+            </div>
+          )}
         </section>
       )}
 
@@ -1893,7 +2121,7 @@ export default function Home() {
             <div className="scene-frame gym-frame">
               <img
                 src="assets/school-gym.png"
-                alt="학교 체육관에서 기울어진 매트, 준비운동 없이 달리기, 흩어진 공, 풀린 운동화 끈을 살펴볼 수 있는 장면"
+                alt="학교 체육관에서 기울어진 매트, 바닥의 줄넘기, 흩어진 공, 풀린 운동화 끈을 살펴볼 수 있는 장면"
               />
               {mobileControlMode === "explore" && (
                 <ExplorerCursor locked={targetLocked} position={playerPosition} />
@@ -1938,7 +2166,7 @@ export default function Home() {
               <img src="assets/safebot-character.png" alt="" />
               <p>
                 <b>세이프봇</b>
-                “빠르게 뛰기 전에 먼저 준비운동! 공과 줄은 사용한 뒤 제자리로.”
+                “바닥의 공과 줄은 바로 정리하고, 운동화 끈도 꼭 확인해!”
               </p>
             </div>
             {gymFound.length < gymHazards.length ? (
@@ -1981,10 +2209,10 @@ export default function Home() {
                 <span aria-hidden="true">⬡</span>
                 <small>MISSION 04 CLEAR</small>
                 <h3>스포츠 실드를 획득했어요</h3>
-                <p>준비운동, 운동화 끈 확인, 기구 정리로 안전한 체육 시간을 만들었어요.</p>
-                <button className="primary-button panel-action" type="button" onClick={enterPool}>
-                  학교 수영장으로 <span aria-hidden="true">→</span>
-                </button>
+                <p>운동화 끈 확인과 기구 정리로 안전한 체육 시간을 만들었어요.</p>
+                <div className="auto-moving">
+                  수영장으로 자동 이동 중 <i aria-hidden="true" />
+                </div>
               </div>
             )}
           </aside>
@@ -2091,11 +2319,39 @@ export default function Home() {
                 </button>
               </>
             ) : (
+              <div className="mission-cleared-card">
+                <span aria-hidden="true">≈</span>
+                <small>WATER SAFETY CHECK</small>
+                <h3>안전 입수 순서를 준비해요</h3>
+                <p>물놀이 위험요소를 모두 찾았습니다.</p>
+                <div className="auto-moving">
+                  순서 퍼즐 자동 실행 중 <i aria-hidden="true" />
+                </div>
+              </div>
+            )}
+          </aside>
+        </section>
+      )}
+
+      {phase === "pool-sequence" && (
+        <section className="quiz-screen sequence-screen">
+          <img
+            className="full-bleed-image blurred"
+            src="assets/school-pool.png"
+            alt=""
+            aria-hidden="true"
+          />
+          <div className="quiz-backdrop sequence-backdrop" />
+          <div className="quiz-card sequence-quiz-card">
+            {!poolSequenceDone ? (
               <>
+                <div className="quiz-card-top">
+                  <span className="chapter-label aqua">WATER SAFETY · ORDER</span>
+                  <span>{pickedPoolSteps.length} / {poolSteps.length}</span>
+                </div>
                 <div className="sequence-header">
-                  <span className="panel-label">안전 입수 순서</span>
-                  <strong>물에 들어가기 전부터 시작해요</strong>
-                  <p>가장 먼저 해야 할 확인부터 차례대로 선택하세요.</p>
+                  <strong>안전한 입수 순서를 완성하세요</strong>
+                  <p>물에 들어가기 전에 가장 먼저 해야 할 일부터 선택해요.</p>
                 </div>
                 <div className="sequence-slots" aria-label="선택한 물놀이 안전 순서">
                   {poolSteps.map((step, index) => {
@@ -2125,14 +2381,19 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
-                {poolSequenceDone && (
-                  <button className="primary-button panel-action aqua-action" type="button" onClick={enterLab}>
-                    과학실로 이동 <span aria-hidden="true">→</span>
-                  </button>
-                )}
               </>
+            ) : (
+              <div className="mission-cleared-card">
+                <span aria-hidden="true">≈</span>
+                <small>MISSION 05 CLEAR</small>
+                <h3>아쿠아 실드를 획득했어요</h3>
+                <p>보호자 확인부터 천천히 입수하기까지 정확한 순서를 완성했어요.</p>
+                <div className="auto-moving">
+                  과학실로 자동 이동 중 <i aria-hidden="true" />
+                </div>
+              </div>
             )}
-          </aside>
+          </div>
         </section>
       )}
 
@@ -2255,9 +2516,14 @@ export default function Home() {
                   잠금 해제 <span aria-hidden="true">⌁</span>
                 </button>
               ) : (
-                <button className="primary-button panel-action success" type="button" onClick={finishGame}>
-                  운동장으로 탈출 <span aria-hidden="true">→</span>
-                </button>
+                <div className="auto-next-card lab-auto-next" role="status">
+                  <span aria-hidden="true">✓</span>
+                  <div>
+                    <b>안전 보관함 해제 완료</b>
+                    <small>운동장으로 자동 이동합니다.</small>
+                  </div>
+                  <i aria-hidden="true" />
+                </div>
               )}
             </form>
             {!labUnlocked && labFound.length < labClues.length && (
@@ -2429,8 +2695,18 @@ export default function Home() {
                   autoComplete="name"
                 />
               </label>
-              <button className="primary-button" type="button" onClick={() => window.print()}>
-                인쇄 · PDF 저장 <span aria-hidden="true">⇩</span>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={downloadCertificateImage}
+                disabled={certificateSaveState === "saving"}
+              >
+                {certificateSaveState === "saving"
+                  ? "이미지 만드는 중…"
+                  : certificateSaveState === "saved"
+                    ? "PNG 이미지 저장 완료 ✓"
+                    : "PNG 이미지로 저장"}{" "}
+                <span aria-hidden="true">⇩</span>
               </button>
             </div>
           </section>
@@ -2475,7 +2751,7 @@ export default function Home() {
                   onClick={mobileSecondaryAction}
                   disabled={
                     (phase === "classroom-quiz" && classQuizLocked) ||
-                    (phase === "traffic" && trafficQuizLocked)
+                    (phase === "traffic-quiz" && trafficQuizLocked)
                   }
                   aria-label={mobileControlMode === "ox" ? "X, 아니다" : "B, 힌트 사용"}
                 >
@@ -2488,7 +2764,7 @@ export default function Home() {
                   onClick={mobilePrimaryAction}
                   disabled={
                     (phase === "classroom-quiz" && classQuizLocked) ||
-                    (phase === "traffic" && trafficQuizLocked)
+                    (phase === "traffic-quiz" && trafficQuizLocked)
                   }
                   aria-label={mobileControlMode === "ox" ? "O, 맞다" : "A, 주변 조사"}
                 >
@@ -2586,7 +2862,7 @@ export default function Home() {
               <article>
                 <span>04</span>
                 <h3>체육관 안전</h3>
-                <p>기울어진 매트, 준비운동 없이 달리기, 흩어진 공, 풀린 운동화 끈을 찾습니다.</p>
+                <p>기울어진 매트, 바닥에 방치된 줄넘기, 흩어진 공, 풀린 운동화 끈을 찾습니다.</p>
                 <b>핵심 질문</b>
                 <small>운동을 시작하기 전에 몸·복장·운동기구를 어떻게 확인해야 할까?</small>
               </article>

@@ -63,17 +63,27 @@ test("contains six complete safety missions", async () => {
   assert.match(page, /phase === "classroom"/);
   assert.match(page, /phase === "corridor"/);
   assert.match(page, /phase === "traffic"/);
+  assert.match(page, /phase === "traffic-quiz"/);
   assert.match(page, /phase === "gym"/);
   assert.match(page, /phase === "pool"/);
+  assert.match(page, /phase === "pool-sequence"/);
   assert.match(page, /phase === "lab"/);
   assert.doesNotMatch(page, /지진 대피/);
+  assert.doesNotMatch(page, /SAFE SCHOOL PROJECT/);
+  assert.doesNotMatch(page, /준비운동 없이 달리기/);
   assert.match(page, /trafficQuiz/);
   assert.match(page, /answerTrafficQuiz\("O"\)/);
   assert.match(page, /answerTrafficQuiz\("X"\)/);
+  assert.match(page, /천천히 걷더라도 운전자와 보행자의 시야가 가려질 수 있다/);
+  assert.match(page, /OX 퀴즈가 자동으로 열립니다/);
+  assert.match(page, /자동 이동 중/);
   assert.match(page, /6284/);
   assert.match(page, /rewardBadges/);
   assert.match(page, /학교 안전교육 이수증/);
-  assert.match(page, /window\.print\(\)/);
+  assert.match(page, /downloadCertificateImage/);
+  assert.match(page, /canvas\.toBlob/);
+  assert.match(page, /학교-안전교육-이수증-/);
+  assert.doesNotMatch(page, /window\.print\(\)/);
 });
 
 test("ships all generated game artwork and removes the old generic corridor asset", async () => {
@@ -133,12 +143,14 @@ test("includes mobile game controls for exploration and OX play", async () => {
   assert.match(css, /touch-action:\s*none/);
   assert.match(css, /@media \(max-width: 820px\)/);
   assert.match(css, /\.explorer-cursor\.target-locked/);
-  assert.match(page, /0\.034/);
+  assert.match(page, /0\.052/);
   assert.match(page, /const musicThemes/);
   assert.match(page, /startBackgroundMusic/);
   assert.match(page, /배경음과 효과음 끄기/);
   assert.match(css, /\.certificate-sheet/);
-  assert.match(css, /@media print/);
+  assert.match(css, /\.auto-next-card/);
+  assert.match(css, /\.toast\.good b/);
+  assert.doesNotMatch(css, /@media print/);
 });
 
 test("has a repository-safe GitHub Pages build", async () => {
