@@ -42,39 +42,48 @@ test("server-renders the finished Safe School game", async () => {
 
   const html = await response.text();
   assert.match(html, /<html lang="ko">/i);
-  assert.match(html, /<title>세이프스쿨: 잠긴 안전코어<\/title>/i);
-  assert.match(html, /잠긴/);
-  assert.match(html, /안전코어/);
+  assert.match(html, /<title>학교 안전 탈출작전<\/title>/i);
+  assert.match(html, /학교 안전/);
+  assert.match(html, /탈출작전/);
   assert.match(html, /미션 시작/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SkeletonPreview/i);
 });
 
-test("contains four complete safety missions and no corridor mission", async () => {
+test("contains six complete safety missions", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
   assert.equal(idCount(arrayBlock(page, "classroomHazards")), 5);
+  assert.equal(idCount(arrayBlock(page, "corridorHazards")), 4);
   assert.equal(idCount(arrayBlock(page, "trafficSpots")), 3);
+  assert.equal(idCount(arrayBlock(page, "gymHazards")), 4);
   assert.equal(idCount(arrayBlock(page, "poolSpots")), 4);
   assert.equal(idCount(arrayBlock(page, "poolSteps")), 4);
   assert.equal(idCount(arrayBlock(page, "labClues")), 4);
 
   assert.match(page, /phase === "classroom"/);
+  assert.match(page, /phase === "corridor"/);
   assert.match(page, /phase === "traffic"/);
+  assert.match(page, /phase === "gym"/);
   assert.match(page, /phase === "pool"/);
   assert.match(page, /phase === "lab"/);
-  assert.doesNotMatch(page, /phase === "corridor"|corridor\.png|지진 대피/);
+  assert.doesNotMatch(page, /지진 대피/);
   assert.match(page, /trafficQuiz/);
   assert.match(page, /answerTrafficQuiz\("O"\)/);
   assert.match(page, /answerTrafficQuiz\("X"\)/);
   assert.match(page, /6284/);
+  assert.match(page, /rewardBadges/);
+  assert.match(page, /학교 안전교육 이수증/);
+  assert.match(page, /window\.print\(\)/);
 });
 
-test("ships all generated game artwork and removes the old corridor asset", async () => {
+test("ships all generated game artwork and removes the old generic corridor asset", async () => {
   const assets = [
     "school-entrance.png",
     "safebot-character.png",
     "classroom.png",
+    "school-corridor.png",
     "traffic-school-zone.png",
+    "school-gym.png",
     "school-pool.png",
     "science-lab.png",
     "schoolyard-final.png",
@@ -124,6 +133,12 @@ test("includes mobile game controls for exploration and OX play", async () => {
   assert.match(css, /touch-action:\s*none/);
   assert.match(css, /@media \(max-width: 820px\)/);
   assert.match(css, /\.explorer-cursor\.target-locked/);
+  assert.match(page, /0\.034/);
+  assert.match(page, /const musicThemes/);
+  assert.match(page, /startBackgroundMusic/);
+  assert.match(page, /배경음과 효과음 끄기/);
+  assert.match(css, /\.certificate-sheet/);
+  assert.match(css, /@media print/);
 });
 
 test("has a repository-safe GitHub Pages build", async () => {

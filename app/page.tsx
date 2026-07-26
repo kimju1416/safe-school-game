@@ -13,7 +13,9 @@ type Phase =
   | "intro"
   | "classroom"
   | "classroom-quiz"
+  | "corridor"
   | "traffic"
+  | "gym"
   | "pool"
   | "lab"
   | "final";
@@ -101,6 +103,49 @@ const classroomQuiz: OXQuestion[] = [
   },
 ];
 
+const corridorHazards = [
+  {
+    id: "running-corner",
+    label: "모퉁이에서 달리기",
+    icon: "🏃",
+    x: 0,
+    y: 35,
+    w: 24,
+    h: 49,
+    lesson: "복도 모퉁이는 앞이 보이지 않아요. 뛰지 말고 오른쪽으로 천천히 걸어요.",
+  },
+  {
+    id: "blocked-exit",
+    label: "비상구를 막은 가방",
+    icon: "🎒",
+    x: 27,
+    y: 48,
+    w: 21,
+    h: 28,
+    lesson: "비상구와 대피 통로 앞에는 가방이나 상자를 두지 않아요.",
+  },
+  {
+    id: "wet-floor",
+    label: "젖은 복도 바닥",
+    icon: "💦",
+    x: 53,
+    y: 66,
+    w: 23,
+    h: 22,
+    lesson: "물이 쏟아졌다면 뛰어넘지 말고 주변 친구에게 알린 뒤 선생님께 바로 알려요.",
+  },
+  {
+    id: "rail-slide",
+    label: "계단 난간 타기",
+    icon: "🛝",
+    x: 75,
+    y: 12,
+    w: 21,
+    h: 44,
+    lesson: "계단 난간은 놀이기구가 아니에요. 손잡이를 잡고 한 칸씩 이동해요.",
+  },
+];
+
 const trafficSpots = [
   {
     id: "phone",
@@ -149,6 +194,49 @@ const trafficQuiz: OXQuestion[] = [
     statement: "주차된 차 사이에서는 천천히 건너면 안전하다.",
     answer: "X",
     explanation: "차량에 가려 서로 보이지 않으므로 횡단보도처럼 시야가 확보된 곳에서 건너요.",
+  },
+];
+
+const gymHazards = [
+  {
+    id: "leaning-mats",
+    label: "기울어진 매트",
+    icon: "🧱",
+    x: 0,
+    y: 43,
+    w: 23,
+    h: 35,
+    lesson: "무거운 매트와 운동기구는 쓰러지지 않게 정해진 자리에 단단히 정리해요.",
+  },
+  {
+    id: "rope-running",
+    label: "준비운동 없이 달리기",
+    icon: "🤸",
+    x: 25,
+    y: 47,
+    w: 25,
+    h: 35,
+    lesson: "운동 전에는 몸 상태를 확인하고 충분히 준비운동을 해요. 바닥의 줄도 먼저 치워요.",
+  },
+  {
+    id: "scattered-balls",
+    label: "코트에 흩어진 공",
+    icon: "🏀",
+    x: 51,
+    y: 52,
+    w: 24,
+    h: 31,
+    lesson: "사용하지 않는 공과 콘은 바로 정리해 넘어지거나 부딪히는 사고를 막아요.",
+  },
+  {
+    id: "untied-shoe",
+    label: "풀린 운동화 끈",
+    icon: "👟",
+    x: 77,
+    y: 50,
+    w: 20,
+    h: 37,
+    lesson: "운동 전 운동화 끈과 복장을 확인하고, 몸에 맞는 운동화를 신어요.",
   },
 ];
 
@@ -277,21 +365,101 @@ const labClues = [
 ];
 
 const inventoryByPhase = [
-  { label: "안전 렌즈", icon: "◉", phase: "classroom-quiz" as Phase },
-  { label: "통학 나침반", icon: "✦", phase: "pool" as Phase },
+  { label: "안전 렌즈", icon: "◉", phase: "corridor" as Phase },
+  { label: "질서의 발걸음", icon: "↟", phase: "traffic" as Phase },
+  { label: "통학 나침반", icon: "✦", phase: "gym" as Phase },
+  { label: "스포츠 실드", icon: "⬡", phase: "pool" as Phase },
   { label: "아쿠아 실드", icon: "≈", phase: "lab" as Phase },
   { label: "실험실 키", icon: "◆", phase: "final" as Phase },
+];
+
+const rewardBadges = [
+  { icon: "◉", title: "교실 관찰자", subject: "생활안전" },
+  { icon: "↟", title: "복도 질서왕", subject: "보행안전" },
+  { icon: "✦", title: "통학 지킴이", subject: "교통안전" },
+  { icon: "⬡", title: "스포츠 가디언", subject: "체육안전" },
+  { icon: "≈", title: "물놀이 수호자", subject: "수상안전" },
+  { icon: "◆", title: "안전 실험가", subject: "실험안전" },
 ];
 
 const phaseOrder: Phase[] = [
   "intro",
   "classroom",
   "classroom-quiz",
+  "corridor",
   "traffic",
+  "gym",
   "pool",
   "lab",
   "final",
 ];
+
+type MusicTheme = {
+  notes: number[];
+  interval: number;
+  duration: number;
+  volume: number;
+  wave: OscillatorType;
+};
+
+const musicThemes: Record<Exclude<Phase, "intro">, MusicTheme> = {
+  classroom: {
+    notes: [261.63, 329.63, 392, 329.63, 293.66, 349.23, 392, 349.23],
+    interval: 720,
+    duration: 1.15,
+    volume: 0.008,
+    wave: "triangle",
+  },
+  "classroom-quiz": {
+    notes: [392, 523.25, 466.16, 587.33, 523.25, 659.25],
+    interval: 520,
+    duration: 0.7,
+    volume: 0.007,
+    wave: "square",
+  },
+  corridor: {
+    notes: [246.94, 293.66, 369.99, 293.66, 261.63, 329.63, 392, 329.63],
+    interval: 560,
+    duration: 0.76,
+    volume: 0.007,
+    wave: "triangle",
+  },
+  traffic: {
+    notes: [293.66, 369.99, 440, 369.99, 329.63, 392, 493.88, 392],
+    interval: 470,
+    duration: 0.62,
+    volume: 0.007,
+    wave: "triangle",
+  },
+  gym: {
+    notes: [329.63, 392, 493.88, 392, 369.99, 440, 523.25, 440],
+    interval: 410,
+    duration: 0.56,
+    volume: 0.007,
+    wave: "square",
+  },
+  pool: {
+    notes: [349.23, 440, 523.25, 440, 392, 493.88, 587.33, 493.88],
+    interval: 790,
+    duration: 1.35,
+    volume: 0.008,
+    wave: "sine",
+  },
+  lab: {
+    notes: [220, 261.63, 329.63, 246.94, 293.66, 369.99, 293.66, 246.94],
+    interval: 610,
+    duration: 0.95,
+    volume: 0.007,
+    wave: "triangle",
+  },
+  final: {
+    notes: [523.25, 659.25, 783.99, 1046.5, 783.99, 659.25],
+    interval: 450,
+    duration: 0.75,
+    volume: 0.009,
+    wave: "sine",
+  },
+};
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -412,7 +580,7 @@ export default function Home() {
   const [score, setScore] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
-  const [hints, setHints] = useState(3);
+  const [hints, setHints] = useState(5);
   const [teacherOpen, setTeacherOpen] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
   const [classFound, setClassFound] = useState<string[]>([]);
@@ -422,6 +590,7 @@ export default function Home() {
     correct: boolean;
     text: string;
   } | null>(null);
+  const [corridorFound, setCorridorFound] = useState<string[]>([]);
   const [trafficFound, setTrafficFound] = useState<string[]>([]);
   const [trafficQuizIndex, setTrafficQuizIndex] = useState(0);
   const [trafficQuizLocked, setTrafficQuizLocked] = useState(false);
@@ -430,6 +599,7 @@ export default function Home() {
     text: string;
   } | null>(null);
   const [trafficQuizDone, setTrafficQuizDone] = useState(false);
+  const [gymFound, setGymFound] = useState<string[]>([]);
   const [poolFound, setPoolFound] = useState<string[]>([]);
   const [pickedPoolSteps, setPickedPoolSteps] = useState<string[]>([]);
   const [poolSequenceDone, setPoolSequenceDone] = useState(false);
@@ -438,25 +608,34 @@ export default function Home() {
   const [labUnlocked, setLabUnlocked] = useState(false);
   const [hintTarget, setHintTarget] = useState<string | null>(null);
   const [best, setBest] = useState<{ score: number; time: number } | null>(null);
+  const [certificateOpen, setCertificateOpen] = useState(false);
+  const [studentName, setStudentName] = useState("");
+  const [completionDate, setCompletionDate] = useState("");
   const [playerPosition, setPlayerPosition] = useState({ x: 50, y: 70 });
   const [joystickVector, setJoystickVector] = useState<JoystickVector>({ x: 0, y: 0 });
   const [controlsMinimized, setControlsMinimized] = useState(false);
   const audioRef = useRef<AudioContext | null>(null);
+  const musicTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const musicStepRef = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const chapter =
     phase === "classroom" || phase === "classroom-quiz"
       ? 1
-      : phase === "traffic"
+      : phase === "corridor"
         ? 2
-        : phase === "pool"
+        : phase === "traffic"
           ? 3
-          : phase === "lab"
+          : phase === "gym"
             ? 4
-            : phase === "final"
+            : phase === "pool"
               ? 5
-              : 0;
+              : phase === "lab"
+                ? 6
+                : phase === "final"
+                  ? 7
+                  : 0;
 
   const currentInventory = useMemo(
     () =>
@@ -471,21 +650,29 @@ export default function Home() {
       ? "explore"
       : phase === "classroom-quiz"
         ? "ox"
-        : phase === "traffic" && trafficFound.length < trafficSpots.length
+        : phase === "corridor"
           ? "explore"
-          : phase === "traffic" && !trafficQuizDone
-            ? "ox"
-            : phase === "pool" && poolFound.length < poolSpots.length
-              ? "explore"
-              : phase === "lab" && labFound.length < labClues.length
+          : phase === "traffic" && trafficFound.length < trafficSpots.length
+            ? "explore"
+            : phase === "traffic" && !trafficQuizDone
+              ? "ox"
+              : phase === "gym" && gymFound.length < gymHazards.length
                 ? "explore"
-                : null;
+                : phase === "pool" && poolFound.length < poolSpots.length
+                  ? "explore"
+                  : phase === "lab" && labFound.length < labClues.length
+                    ? "explore"
+                    : null;
 
   let controllerTargets: SceneTarget[] = [];
   if (phase === "classroom") {
     controllerTargets = classroomHazards.filter((item) => !classFound.includes(item.id));
+  } else if (phase === "corridor") {
+    controllerTargets = corridorHazards.filter((item) => !corridorFound.includes(item.id));
   } else if (phase === "traffic" && trafficFound.length < trafficSpots.length) {
     controllerTargets = trafficSpots.filter((item) => !trafficFound.includes(item.id));
+  } else if (phase === "gym") {
+    controllerTargets = gymHazards.filter((item) => !gymFound.includes(item.id));
   } else if (phase === "pool" && poolFound.length < poolSpots.length) {
     controllerTargets = poolSpots.filter((item) => !poolFound.includes(item.id));
   } else if (phase === "lab" && labFound.length < labClues.length) {
@@ -556,8 +743,8 @@ export default function Home() {
       const delta = Math.min(32, now - previous);
       previous = now;
       setPlayerPosition((position) => ({
-        x: Math.max(4, Math.min(96, position.x + joystickVector.x * delta * 0.016)),
-        y: Math.max(6, Math.min(92, position.y + joystickVector.y * delta * 0.016)),
+        x: Math.max(4, Math.min(96, position.x + joystickVector.x * delta * 0.034)),
+        y: Math.max(6, Math.min(92, position.y + joystickVector.y * delta * 0.034)),
       }));
       frame = requestAnimationFrame(move);
     };
@@ -565,16 +752,23 @@ export default function Home() {
     return () => cancelAnimationFrame(frame);
   }, [controlsMinimized, joystickVector, mobileControlMode]);
 
+  useEffect(() => {
+    stopBackgroundMusic();
+    if (!soundOn || phase === "intro") return;
+    startBackgroundMusic(phase);
+    return stopBackgroundMusic;
+  }, [phase, soundOn]);
+
   useEffect(
     () => () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
       if (hintTimer.current) clearTimeout(hintTimer.current);
+      stopBackgroundMusic();
     },
     [],
   );
 
-  function playTone(kind: "good" | "bad" | "click" | "win") {
-    if (!soundOn) return;
+  function getAudioContext() {
     const AudioCtor =
       window.AudioContext ||
       (
@@ -582,9 +776,72 @@ export default function Home() {
           webkitAudioContext?: typeof AudioContext;
         }
       ).webkitAudioContext;
-    if (!AudioCtor) return;
+    if (!AudioCtor) return null;
     const context = audioRef.current ?? new AudioCtor();
     audioRef.current = context;
+    if (context.state === "suspended") void context.resume();
+    return context;
+  }
+
+  function stopBackgroundMusic() {
+    if (!musicTimerRef.current) return;
+    clearInterval(musicTimerRef.current);
+    musicTimerRef.current = null;
+  }
+
+  function playAmbientNote(context: AudioContext, frequency: number, theme: MusicTheme) {
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = theme.wave;
+    oscillator.frequency.setValueAtTime(frequency, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(theme.volume, now + 0.045);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + theme.duration);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + theme.duration + 0.06);
+  }
+
+  function startBackgroundMusic(targetPhase: Exclude<Phase, "intro">) {
+    const context = getAudioContext();
+    if (!context) return;
+    const theme = musicThemes[targetPhase];
+    musicStepRef.current = 0;
+
+    const playNext = () => {
+      const step = musicStepRef.current;
+      const frequency = theme.notes[step % theme.notes.length];
+      playAmbientNote(context, frequency, theme);
+      if (step % 4 === 0) {
+        playAmbientNote(context, frequency / 2, {
+          ...theme,
+          duration: theme.duration * 1.55,
+          volume: theme.volume * 0.36,
+          wave: "sine",
+        });
+      }
+      musicStepRef.current = step + 1;
+    };
+
+    playNext();
+    musicTimerRef.current = setInterval(playNext, theme.interval);
+  }
+
+  function toggleAudio() {
+    if (soundOn) {
+      setSoundOn(false);
+      return;
+    }
+    getAudioContext();
+    setSoundOn(true);
+  }
+
+  function playTone(kind: "good" | "bad" | "click" | "win") {
+    if (!soundOn) return;
+    const context = getAudioContext();
+    if (!context) return;
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     const now = context.currentTime;
@@ -616,7 +873,7 @@ export default function Home() {
   }
 
   function addScore(points: number) {
-    setScore((value) => Math.max(0, Math.min(100, value + points)));
+    setScore((value) => Math.max(0, Math.min(120, value + points)));
   }
 
   function startGame() {
@@ -634,17 +891,19 @@ export default function Home() {
     setPhase("intro");
     setScore(0);
     setElapsed(0);
-    setHints(3);
+    setHints(5);
     setToast(null);
     setClassFound([]);
     setClassQuizIndex(0);
     setClassQuizLocked(false);
     setClassQuizFeedback(null);
+    setCorridorFound([]);
     setTrafficFound([]);
     setTrafficQuizIndex(0);
     setTrafficQuizLocked(false);
     setTrafficFeedback(null);
     setTrafficQuizDone(false);
+    setGymFound([]);
     setPoolFound([]);
     setPickedPoolSteps([]);
     setPoolSequenceDone(false);
@@ -652,6 +911,9 @@ export default function Home() {
     setCode("");
     setLabUnlocked(false);
     setHintTarget(null);
+    setCertificateOpen(false);
+    setStudentName("");
+    setCompletionDate("");
   }
 
   function toggleFullscreen() {
@@ -676,7 +938,7 @@ export default function Home() {
     });
   }
 
-  function useHint(targets: Array<{ id: string }>, found: string[]) {
+  function requestHint(targets: Array<{ id: string }>, found: string[]) {
     if (hints <= 0) {
       announce({
         title: "힌트를 모두 사용했어요",
@@ -721,10 +983,10 @@ export default function Home() {
         if (classQuizIndex === classroomQuiz.length - 1) {
           setClassQuizFeedback(null);
           setClassQuizLocked(false);
-          setPhase("traffic");
+          setPhase("corridor");
           announce({
             title: "안전 렌즈 복구 완료",
-            message: "학교 밖 통학로가 열렸어요. 등하교·자전거 위험요소를 찾아주세요.",
+            message: "교실 문이 열렸어요. 복도와 계단의 위험요소를 찾아주세요.",
             tone: "good",
           });
         } else {
@@ -740,6 +1002,30 @@ export default function Home() {
         setClassQuizLocked(false);
       }, 1700);
     }
+  }
+
+  function findCorridorHazard(id: string) {
+    if (corridorFound.includes(id)) return;
+    const hazard = corridorHazards.find((item) => item.id === id);
+    if (!hazard) return;
+    setCorridorFound((items) => [...items, id]);
+    addScore(3);
+    playTone("good");
+    announce({
+      title: `${hazard.icon} ${hazard.label} 발견!`,
+      message: hazard.lesson,
+      tone: "good",
+    });
+  }
+
+  function enterTraffic() {
+    setPhase("traffic");
+    playTone("click");
+    announce({
+      title: "미션 3 · 통학로",
+      message: "등하교 길과 자전거 이용 중 위험행동 3개를 찾아주세요.",
+      tone: "info",
+    });
   }
 
   function findTrafficSpot(id: string) {
@@ -790,11 +1076,35 @@ export default function Home() {
     }
   }
 
+  function enterGym() {
+    setPhase("gym");
+    playTone("click");
+    announce({
+      title: "미션 4 · 체육관",
+      message: "운동을 시작하기 전 체육관의 위험요소 4개를 찾아주세요.",
+      tone: "info",
+    });
+  }
+
+  function findGymHazard(id: string) {
+    if (gymFound.includes(id)) return;
+    const hazard = gymHazards.find((item) => item.id === id);
+    if (!hazard) return;
+    setGymFound((items) => [...items, id]);
+    addScore(3);
+    playTone("good");
+    announce({
+      title: `${hazard.icon} ${hazard.label} 발견!`,
+      message: hazard.lesson,
+      tone: "good",
+    });
+  }
+
   function enterPool() {
     setPhase("pool");
     playTone("click");
     announce({
-      title: "미션 3 · 학교 수영장",
+      title: "미션 5 · 학교 수영장",
       message: "물가의 위험행동 4개를 찾고 안전한 입수 순서를 완성하세요.",
       tone: "info",
     });
@@ -847,7 +1157,7 @@ export default function Home() {
     setPhase("lab");
     playTone("click");
     announce({
-      title: "미션 4 · 과학실",
+      title: "미션 6 · 과학실",
       message: "네 개의 안전 단서를 찾아 잠긴 캐비닛의 암호를 해제하세요.",
       tone: "info",
     });
@@ -883,7 +1193,7 @@ export default function Home() {
       addScore(12);
       playTone("win");
       announce({
-        title: "안전코어 잠금 해제!",
+        title: "안전 보관함 잠금 해제!",
         message: "보호구와 위험요소를 올바른 순서로 확인했어요.",
         tone: "good",
       });
@@ -926,7 +1236,9 @@ export default function Home() {
     }
 
     if (phase === "classroom") findClassHazard(nearestTarget.id);
+    if (phase === "corridor") findCorridorHazard(nearestTarget.id);
     if (phase === "traffic") findTrafficSpot(nearestTarget.id);
+    if (phase === "gym") findGymHazard(nearestTarget.id);
     if (phase === "pool") findPoolSpot(nearestTarget.id);
     if (phase === "lab") findLabClue(nearestTarget.id);
     vibrate(28);
@@ -940,14 +1252,24 @@ export default function Home() {
       return;
     }
 
-    if (phase === "classroom") useHint(classroomHazards, classFound);
-    if (phase === "traffic") useHint(trafficSpots, trafficFound);
-    if (phase === "pool") useHint(poolSpots, poolFound);
-    if (phase === "lab") useHint(labClues, labFound);
+    if (phase === "classroom") requestHint(classroomHazards, classFound);
+    if (phase === "corridor") requestHint(corridorHazards, corridorFound);
+    if (phase === "traffic") requestHint(trafficSpots, trafficFound);
+    if (phase === "gym") requestHint(gymHazards, gymFound);
+    if (phase === "pool") requestHint(poolSpots, poolFound);
+    if (phase === "lab") requestHint(labClues, labFound);
     vibrate(16);
   }
 
   function finishGame() {
+    addScore(8);
+    setCompletionDate(
+      new Intl.DateTimeFormat("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }).format(new Date()),
+    );
     setPhase("final");
     playTone("win");
   }
@@ -965,12 +1287,12 @@ export default function Home() {
             <img className="hud-avatar" src="assets/safebot-character.png" alt="" />
             <div>
               <span className="eyebrow">SAFE SCHOOL</span>
-              <strong>잠긴 안전코어</strong>
+              <strong>학교 안전 탈출작전</strong>
             </div>
           </div>
 
-          <div className="mission-progress" aria-label={`전체 4개 미션 중 ${chapter}번째`}>
-            {[1, 2, 3, 4].map((step) => (
+          <div className="mission-progress" aria-label={`전체 6개 미션 중 ${Math.min(chapter, 6)}번째`}>
+            {[1, 2, 3, 4, 5, 6].map((step) => (
               <span
                 key={step}
                 className={cx(
@@ -980,7 +1302,7 @@ export default function Home() {
                 )}
               >
                 <i>{chapter > step ? "✓" : step}</i>
-                <b>{["교실", "통학로", "수영장", "과학실"][step - 1]}</b>
+                <b>{["교실", "복도", "통학로", "체육관", "수영장", "과학실"][step - 1]}</b>
               </span>
             ))}
           </div>
@@ -997,10 +1319,10 @@ export default function Home() {
             <button
               className="icon-button"
               type="button"
-              onClick={() => setSoundOn((value) => !value)}
-              aria-label={soundOn ? "효과음 끄기" : "효과음 켜기"}
+              onClick={toggleAudio}
+              aria-label={soundOn ? "배경음과 효과음 끄기" : "배경음과 효과음 켜기"}
             >
-              {soundOn ? "♪" : "×"}
+              {soundOn ? "♫" : "×"}
             </button>
             <button
               className="icon-button desktop-only"
@@ -1046,14 +1368,14 @@ export default function Home() {
               <i aria-hidden="true">●</i> SCHOOL SAFETY ESCAPE
             </span>
             <h1>
-              잠긴
+              학교 안전
               <br />
-              <em>안전코어</em>
+              <em>탈출작전</em>
             </h1>
             <p>
-              방과 후, 학교의 안전 시스템이 멈췄다.
+              방과 후, 학교에 위험 경보가 울렸다.
               <br />
-              네 개의 구역을 탐색하고 올바른 판단으로 학교를 깨워라.
+              여섯 개의 구역에서 안전 미션을 해결하고 모두의 안전한 하교를 도와라.
             </p>
             <div className="intro-actions">
               <button className="primary-button hero-button" type="button" onClick={startGame}>
@@ -1062,10 +1384,10 @@ export default function Home() {
               </button>
               <div className="game-facts" aria-label="게임 정보">
                 <span>
-                  <b>4</b>개 구역
+                  <b>6</b>개 구역
                 </span>
                 <span>
-                  <b>15</b>분 예상
+                  <b>20</b>분 예상
                 </span>
                 <span>
                   <b>1</b>인 플레이
@@ -1092,7 +1414,7 @@ export default function Home() {
           </div>
           <div className="intro-footer">
             <span>대상 · 초등 4–6학년</span>
-            <span>생활안전 · 교통안전 · 물놀이안전 · 실험안전</span>
+            <span>생활안전 · 복도안전 · 교통안전 · 체육안전 · 물놀이안전 · 실험안전</span>
           </div>
         </section>
       )}
@@ -1197,7 +1519,7 @@ export default function Home() {
               <button
                 className="hint-button"
                 type="button"
-                onClick={() => useHint(classroomHazards, classFound)}
+                onClick={() => requestHint(classroomHazards, classFound)}
               >
                 <span aria-hidden="true">◎</span>
                 스캔 힌트
@@ -1275,12 +1597,121 @@ export default function Home() {
         </section>
       )}
 
+      {phase === "corridor" && (
+        <section className="mission-screen corridor-layout">
+          <div className="scene-column">
+            <div className="scene-heading">
+              <div>
+                <span className="chapter-label violet">MISSION 02</span>
+                <h2>복도의 위험 신호를 멈춰라</h2>
+              </div>
+              <p>
+                복도와 계단에 숨은 <b>위험행동 4개</b>를 찾으세요.
+              </p>
+            </div>
+            <div className="scene-frame corridor-frame">
+              <img
+                src="assets/school-corridor.png"
+                alt="학교 복도에서 달리기, 비상구 앞 적치물, 젖은 바닥, 계단 난간 타기 행동을 살펴볼 수 있는 장면"
+              />
+              {mobileControlMode === "explore" && (
+                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+              )}
+              {corridorHazards.map((hazard) => {
+                const found = corridorFound.includes(hazard.id);
+                return (
+                  <button
+                    type="button"
+                    key={hazard.id}
+                    className={cx(
+                      "hotspot corridor-hotspot",
+                      found && "found",
+                      hintTarget === hazard.id && "hinted",
+                    )}
+                    style={{
+                      left: `${hazard.x}%`,
+                      top: `${hazard.y}%`,
+                      width: `${hazard.w}%`,
+                      height: `${hazard.h}%`,
+                    }}
+                    onClick={() => findCorridorHazard(hazard.id)}
+                    aria-label={found ? `${hazard.label} 발견 완료` : "복도 위험행동 확인"}
+                  >
+                    <span aria-hidden="true">{found ? "✓" : "⌕"}</span>
+                    {found && <b>{hazard.label}</b>}
+                  </button>
+                );
+              })}
+              <span className="scene-caption">
+                복도에서는 오른쪽으로 천천히 걷고, 계단 손잡이를 잡아요
+              </span>
+            </div>
+          </div>
+
+          <aside className="mission-panel corridor-panel">
+            <div className="guide-tip violet-tip">
+              <img src="assets/safebot-character.png" alt="" />
+              <p>
+                <b>세이프봇</b>
+                “모퉁이와 계단에서는 한 걸음 천천히! 대피 통로는 항상 비워 둬.”
+              </p>
+            </div>
+            {corridorFound.length < corridorHazards.length ? (
+              <>
+                <div className="panel-top compact-panel-top">
+                  <div>
+                    <span className="panel-label">복도 위험 탐지</span>
+                    <strong>
+                      {corridorFound.length}
+                      <small> / {corridorHazards.length}</small>
+                    </strong>
+                  </div>
+                </div>
+                <div className="found-list">
+                  {corridorHazards.map((hazard) => {
+                    const found = corridorFound.includes(hazard.id);
+                    return (
+                      <div className={cx("found-item", found && "revealed")} key={hazard.id}>
+                        <span aria-hidden="true">{found ? hazard.icon : "?"}</span>
+                        <div>
+                          <b>{found ? hazard.label : "숨은 복도 위험"}</b>
+                          <small>{found ? hazard.lesson : "복도와 계단을 자세히 살펴보세요."}</small>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button
+                  className="hint-button"
+                  type="button"
+                onClick={() => requestHint(corridorHazards, corridorFound)}
+                >
+                  <span aria-hidden="true">◎</span>
+                  질서 스캔
+                  <b>{hints}개 남음</b>
+                </button>
+              </>
+            ) : (
+              <div className="mission-cleared-card">
+                <span aria-hidden="true">↟</span>
+                <small>MISSION 02 CLEAR</small>
+                <h3>질서의 발걸음을 획득했어요</h3>
+                <p>복도에서는 천천히, 오른쪽으로 걷고 대피 통로는 항상 비워 둬요.</p>
+                <button className="primary-button panel-action" type="button" onClick={enterTraffic}>
+                  통학로로 이동 <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            )}
+          </aside>
+        </section>
+      )}
+
       {phase === "traffic" && (
         <section className="mission-screen traffic-layout">
           <div className="scene-column">
             <div className="scene-heading">
               <div>
-                <span className="chapter-label coral">MISSION 02</span>
+                <span className="chapter-label coral">MISSION 03</span>
                 <h2>안전한 통학로를 복구하라</h2>
               </div>
               <p>
@@ -1367,7 +1798,7 @@ export default function Home() {
                 <button
                   className="hint-button"
                   type="button"
-                  onClick={() => useHint(trafficSpots, trafficFound)}
+                  onClick={() => requestHint(trafficSpots, trafficFound)}
                 >
                   <span aria-hidden="true">◎</span>
                   스캔 힌트
@@ -1435,9 +1866,122 @@ export default function Home() {
             ) : (
               <div className="mission-cleared-card">
                 <span aria-hidden="true">✦</span>
-                <small>MISSION 02 CLEAR</small>
+                <small>MISSION 03 CLEAR</small>
                 <h3>통학 나침반을 획득했어요</h3>
                 <p>스마트폰은 넣고, 안전모를 쓰고, 횡단보도에서는 자전거를 끌고 건너요.</p>
+                <button className="primary-button panel-action" type="button" onClick={enterGym}>
+                  체육관으로 이동 <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            )}
+          </aside>
+        </section>
+      )}
+
+      {phase === "gym" && (
+        <section className="mission-screen gym-layout">
+          <div className="scene-column">
+            <div className="scene-heading">
+              <div>
+                <span className="chapter-label lime">MISSION 04</span>
+                <h2>체육관의 안전 라인을 지켜라</h2>
+              </div>
+              <p>
+                운동 전 확인해야 할 <b>위험요소 4개</b>를 찾으세요.
+              </p>
+            </div>
+            <div className="scene-frame gym-frame">
+              <img
+                src="assets/school-gym.png"
+                alt="학교 체육관에서 기울어진 매트, 준비운동 없이 달리기, 흩어진 공, 풀린 운동화 끈을 살펴볼 수 있는 장면"
+              />
+              {mobileControlMode === "explore" && (
+                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+              )}
+              {gymHazards.map((hazard) => {
+                const found = gymFound.includes(hazard.id);
+                return (
+                  <button
+                    type="button"
+                    key={hazard.id}
+                    className={cx(
+                      "hotspot gym-hotspot",
+                      found && "found",
+                      hintTarget === hazard.id && "hinted",
+                    )}
+                    style={{
+                      left: `${hazard.x}%`,
+                      top: `${hazard.y}%`,
+                      width: `${hazard.w}%`,
+                      height: `${hazard.h}%`,
+                    }}
+                    onClick={() => findGymHazard(hazard.id)}
+                    aria-label={found ? `${hazard.label} 발견 완료` : "체육관 위험요소 확인"}
+                  >
+                    <span aria-hidden="true">{found ? "✓" : "⌕"}</span>
+                    {found && <b>{hazard.label}</b>}
+                  </button>
+                );
+              })}
+              <div className="safe-role-callout gym-safe">
+                <span aria-hidden="true">✓</span>
+                <b>몸 상태 확인 · 준비운동 · 장비 정리</b>
+              </div>
+              <span className="scene-caption">
+                운동 전에는 몸과 복장을 확인하고, 사용한 기구는 바로 정리해요
+              </span>
+            </div>
+          </div>
+
+          <aside className="mission-panel gym-panel">
+            <div className="guide-tip lime-tip">
+              <img src="assets/safebot-character.png" alt="" />
+              <p>
+                <b>세이프봇</b>
+                “빠르게 뛰기 전에 먼저 준비운동! 공과 줄은 사용한 뒤 제자리로.”
+              </p>
+            </div>
+            {gymFound.length < gymHazards.length ? (
+              <>
+                <div className="panel-top compact-panel-top">
+                  <div>
+                    <span className="panel-label">체육 위험 탐지</span>
+                    <strong>
+                      {gymFound.length}
+                      <small> / {gymHazards.length}</small>
+                    </strong>
+                  </div>
+                </div>
+                <div className="found-list">
+                  {gymHazards.map((hazard) => {
+                    const found = gymFound.includes(hazard.id);
+                    return (
+                      <div className={cx("found-item gym-found", found && "revealed")} key={hazard.id}>
+                        <span aria-hidden="true">{found ? hazard.icon : "?"}</span>
+                        <div>
+                          <b>{found ? hazard.label : "숨은 체육관 위험"}</b>
+                          <small>{found ? hazard.lesson : "바닥과 운동기구를 자세히 살펴보세요."}</small>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button
+                  className="hint-button"
+                  type="button"
+                onClick={() => requestHint(gymHazards, gymFound)}
+                >
+                  <span aria-hidden="true">◎</span>
+                  스포츠 스캔
+                  <b>{hints}개 남음</b>
+                </button>
+              </>
+            ) : (
+              <div className="mission-cleared-card">
+                <span aria-hidden="true">⬡</span>
+                <small>MISSION 04 CLEAR</small>
+                <h3>스포츠 실드를 획득했어요</h3>
+                <p>준비운동, 운동화 끈 확인, 기구 정리로 안전한 체육 시간을 만들었어요.</p>
                 <button className="primary-button panel-action" type="button" onClick={enterPool}>
                   학교 수영장으로 <span aria-hidden="true">→</span>
                 </button>
@@ -1452,7 +1996,7 @@ export default function Home() {
           <div className="scene-column">
             <div className="scene-heading">
               <div>
-                <span className="chapter-label aqua">MISSION 03</span>
+                <span className="chapter-label aqua">MISSION 05</span>
                 <h2>수영장의 위험 파동을 멈춰라</h2>
               </div>
               <p>
@@ -1539,7 +2083,7 @@ export default function Home() {
                 <button
                   className="hint-button"
                   type="button"
-                  onClick={() => useHint(poolSpots, poolFound)}
+                  onClick={() => requestHint(poolSpots, poolFound)}
                 >
                   <span aria-hidden="true">◎</span>
                   아쿠아 스캔
@@ -1597,7 +2141,7 @@ export default function Home() {
           <div className="scene-column">
             <div className="scene-heading">
               <div>
-                <span className="chapter-label amber">MISSION 04</span>
+                <span className="chapter-label amber">MISSION 06</span>
                 <h2>과학실의 암호를 해제하라</h2>
               </div>
               <p>
@@ -1644,7 +2188,7 @@ export default function Home() {
                   announce({
                     title: labUnlocked ? "캐비닛이 열렸어요" : "네 자리 암호가 필요해요",
                     message: labUnlocked
-                      ? "마지막 안전코어가 빛나고 있습니다."
+                      ? "마지막 안전 배지가 들어 있습니다."
                       : "단서 순서: 눈 → 손 → 액체 → 열",
                     tone: labUnlocked ? "good" : "info",
                   })
@@ -1660,7 +2204,7 @@ export default function Home() {
 
           <aside className="mission-panel lab-panel">
             <div className="code-header">
-              <span className="panel-label">안전코어 잠금장치</span>
+              <span className="panel-label">안전 수칙 보관함</span>
               <strong>네 자리 암호</strong>
               <p>메모에 적힌 순서대로 발견한 숫자를 입력하세요.</p>
             </div>
@@ -1720,7 +2264,7 @@ export default function Home() {
               <button
                 className="hint-button"
                 type="button"
-                onClick={() => useHint(labClues, labFound)}
+                onClick={() => requestHint(labClues, labFound)}
               >
                 <span aria-hidden="true">◎</span>
                 스캔 힌트
@@ -1736,7 +2280,7 @@ export default function Home() {
           <img
             className="full-bleed-image"
             src="assets/schoolyard-final.png"
-            alt="학교 운동장에서 학생들과 선생님이 안전코어 복구를 축하하는 모습"
+            alt="학교 운동장에서 학생들과 선생님이 안전 미션 완료를 축하하는 모습"
           />
           <div className="final-vignette" />
           <div className="confetti" aria-hidden="true">
@@ -1759,7 +2303,7 @@ export default function Home() {
             <div className="final-badge" aria-hidden="true">
               <span>★</span>
             </div>
-            <h1>학교의 안전코어가<br />다시 깨어났어요!</h1>
+            <h1>학교 안전 미션을<br />모두 해결했어요!</h1>
             <p>
               위험을 발견하고, 침착하게 판단하고, 올바른 순서를 선택했습니다.
               <br />
@@ -1768,7 +2312,7 @@ export default function Home() {
             <div className="result-board">
               <div>
                 <span>최종 점수</span>
-                <strong>{score}<small>/100</small></strong>
+                <strong>{score}<small>/120</small></strong>
               </div>
               <div>
                 <span>탈출 시간</span>
@@ -1776,16 +2320,34 @@ export default function Home() {
               </div>
               <div>
                 <span>획득 배지</span>
-                <strong>4<small>/4</small></strong>
+                <strong>6<small>/6</small></strong>
               </div>
             </div>
-            <div className="earned-badges">
-              <span><i>◉</i> 교실 관찰자</span>
-              <span><i>✦</i> 통학 지킴이</span>
-              <span><i>≈</i> 물놀이 수호자</span>
-              <span><i>◆</i> 안전 실험가</span>
+            <div className="reward-heading">
+              <span>COLLECTION COMPLETE</span>
+              <b>안전 수호대 배지 컬렉션</b>
+            </div>
+            <div className="reward-showcase" aria-label="획득한 안전 배지 6개">
+              {rewardBadges.map((badge, index) => (
+                <div className="reward-badge-card" key={badge.title}>
+                  <i className={`reward-medal medal-${index + 1}`} aria-hidden="true">
+                    {badge.icon}
+                  </i>
+                  <div>
+                    <b>{badge.title}</b>
+                    <small>{badge.subject}</small>
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="final-actions">
+              <button
+                className="primary-button certificate-button"
+                type="button"
+                onClick={() => setCertificateOpen(true)}
+              >
+                이수증 발급받기 <span aria-hidden="true">✦</span>
+              </button>
               <button className="primary-button" type="button" onClick={resetGame}>
                 다시 도전하기 <span aria-hidden="true">↻</span>
               </button>
@@ -1795,6 +2357,84 @@ export default function Home() {
             </div>
           </div>
         </section>
+      )}
+
+      {certificateOpen && (
+        <div
+          className="certificate-layer"
+          role="presentation"
+          onMouseDown={() => setCertificateOpen(false)}
+        >
+          <section
+            className="certificate-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="certificate-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="certificate-close"
+              type="button"
+              onClick={() => setCertificateOpen(false)}
+              aria-label="이수증 닫기"
+            >
+              ×
+            </button>
+            <div className="certificate-sheet">
+              <div className="certificate-border" aria-hidden="true" />
+              <header className="certificate-header">
+                <span>SAFE SCHOOL CERTIFICATE</span>
+                <b>SS-{String(score).padStart(3, "0")}-{String(elapsed).padStart(4, "0")}</b>
+              </header>
+              <div className="certificate-seal" aria-hidden="true">
+                <span>★</span>
+                <small>6 ZONES</small>
+              </div>
+              <p className="certificate-kicker">학교 안전교육 이수증</p>
+              <h2 id="certificate-title">
+                {studentName.trim() || "안전 수호대"} <small>학생</small>
+              </h2>
+              <p className="certificate-copy">
+                위 학생은 교실·복도·통학로·체육관·수영장·과학실의
+                <br />
+                여섯 가지 안전 미션을 성실히 해결하였기에 이 증서를 수여합니다.
+              </p>
+              <div className="certificate-badges" aria-label="이수한 안전교육 영역">
+                {rewardBadges.map((badge) => (
+                  <span key={badge.title}>
+                    <i aria-hidden="true">{badge.icon}</i>
+                    <b>{badge.subject}</b>
+                  </span>
+                ))}
+              </div>
+              <footer className="certificate-footer">
+                <div>
+                  <span>이수일</span>
+                  <b>{completionDate || "미션 완료일"}</b>
+                </div>
+                <div className="certificate-signature">
+                  <span>학교 안전교육</span>
+                  <b>세이프스쿨 안전 수호대</b>
+                </div>
+              </footer>
+            </div>
+            <div className="certificate-controls">
+              <label htmlFor="student-name">
+                이수증에 표시할 이름
+                <input
+                  id="student-name"
+                  value={studentName}
+                  onChange={(event) => setStudentName(event.target.value.slice(0, 12))}
+                  placeholder="이름을 입력하세요"
+                  autoComplete="name"
+                />
+              </label>
+              <button className="primary-button" type="button" onClick={() => window.print()}>
+                인쇄 · PDF 저장 <span aria-hidden="true">⇩</span>
+              </button>
+            </div>
+          </section>
+        </div>
       )}
 
       {mobileControlMode && (
@@ -1918,8 +2558,8 @@ export default function Home() {
               </button>
             </div>
             <p className="modal-lead">
-              초등 4–6학년이 약 12–18분 동안 교실 생활안전, 등하교·자전거
-              교통안전, 물놀이 안전, 실험안전을 스스로 판단하도록 설계했습니다.
+              초등 4–6학년이 약 18–25분 동안 교실·복도 생활안전, 등하교·자전거
+              교통안전, 체육·물놀이·실험안전을 스스로 판단하도록 설계했습니다.
             </p>
             <div className="guide-grid">
               <article>
@@ -1931,20 +2571,34 @@ export default function Home() {
               </article>
               <article>
                 <span>02</span>
+                <h3>복도·계단 안전</h3>
+                <p>모퉁이 달리기, 비상구 앞 적치물, 젖은 바닥, 계단 난간 타기의 위험을 찾습니다.</p>
+                <b>핵심 질문</b>
+                <small>복도와 계단에서 친구와 부딪히지 않으려면 어떻게 이동해야 할까?</small>
+              </article>
+              <article>
+                <span>03</span>
                 <h3>등하교·자전거</h3>
                 <p>스마트폰 보행, 주차 차량 사이 횡단, 안전모 없는 횡단보도 주행을 찾습니다.</p>
                 <b>핵심 질문</b>
                 <small>왜 횡단보도에서는 자전거에서 내려 끌고 건너야 할까?</small>
               </article>
               <article>
-                <span>03</span>
+                <span>04</span>
+                <h3>체육관 안전</h3>
+                <p>기울어진 매트, 준비운동 없이 달리기, 흩어진 공, 풀린 운동화 끈을 찾습니다.</p>
+                <b>핵심 질문</b>
+                <small>운동을 시작하기 전에 몸·복장·운동기구를 어떻게 확인해야 할까?</small>
+              </article>
+              <article>
+                <span>05</span>
                 <h3>수영장 안전</h3>
                 <p>달리기, 밀기, 얕은 곳 다이빙, 혼자 멀리 수영하기의 위험을 찾습니다.</p>
                 <b>안전 입수 순서</b>
                 <small>보호자·안전구역 확인 → 준비운동 → 구명조끼 → 천천히 입수</small>
               </article>
               <article>
-                <span>04</span>
+                <span>06</span>
                 <h3>과학실 암호</h3>
                 <p>보안경 6 → 장갑 2 → 액체 8 → 열원 4, 최종 암호는 6284입니다.</p>
                 <b>핵심 질문</b>
