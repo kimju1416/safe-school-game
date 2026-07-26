@@ -34,6 +34,41 @@ type OXQuestion = {
   explanation: string;
 };
 
+type Difficulty = "lower" | "upper" | "middle";
+
+const difficultyOptions: Record<
+  Difficulty,
+  {
+    label: string;
+    grade: string;
+    description: string;
+    lockDistance: number;
+    guideDefault: boolean;
+  }
+> = {
+  lower: {
+    label: "저학년",
+    grade: "1–3학년",
+    description: "넓은 조사 범위와 커서 근접 힌트로 차근차근 탐색해요.",
+    lockDistance: 16,
+    guideDefault: true,
+  },
+  upper: {
+    label: "고학년",
+    grade: "4–6학년",
+    description: "표준 조사 범위에서 위치 표시 없이 스스로 위험을 찾아요.",
+    lockDistance: 12,
+    guideDefault: false,
+  },
+  middle: {
+    label: "중학생",
+    grade: "심화 과정",
+    description: "더 정확히 접근해야 조사할 수 있는 도전 모드예요.",
+    lockDistance: 9,
+    guideDefault: false,
+  },
+};
+
 const classroomHazards = [
   {
     id: "outlet",
@@ -599,6 +634,9 @@ export default function Home() {
   const [score, setScore] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
+  const [difficulty, setDifficulty] = useState<Difficulty>("upper");
+  const [cursorGuideOn, setCursorGuideOn] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [hints, setHints] = useState(5);
   const [teacherOpen, setTeacherOpen] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
@@ -711,7 +749,10 @@ export default function Home() {
       };
     })
     .sort((a, b) => a.distance - b.distance)[0];
-  const targetLocked = Boolean(nearestTarget && nearestTarget.distance <= 14);
+  const targetLocked = Boolean(
+    nearestTarget &&
+      nearestTarget.distance <= difficultyOptions[difficulty].lockDistance,
+  );
 
   useEffect(() => {
     const raw = window.localStorage.getItem("safe-school-best");
@@ -720,6 +761,28 @@ export default function Home() {
         setBest(JSON.parse(raw));
       } catch {
         window.localStorage.removeItem("safe-school-best");
+      }
+    }
+
+    const rawSettings = window.localStorage.getItem("safe-school-settings");
+    if (rawSettings) {
+      try {
+        const saved = JSON.parse(rawSettings) as {
+          difficulty?: Difficulty;
+          cursorGuideOn?: boolean;
+          soundOn?: boolean;
+        };
+        if (saved.difficulty && saved.difficulty in difficultyOptions) {
+          setDifficulty(saved.difficulty);
+        }
+        if (typeof saved.cursorGuideOn === "boolean") {
+          setCursorGuideOn(saved.cursorGuideOn);
+        }
+        if (typeof saved.soundOn === "boolean") {
+          setSoundOn(saved.soundOn);
+        }
+      } catch {
+        window.localStorage.removeItem("safe-school-settings");
       }
     }
   }, []);
@@ -852,12 +915,40 @@ export default function Home() {
   }
 
   function toggleAudio() {
-    if (soundOn) {
-      setSoundOn(false);
-      return;
-    }
-    getAudioContext();
-    setSoundOn(true);
+    const nextSoundOn = !soundOn;
+    if (nextSoundOn) getAudioContext();
+    setSoundOn(nextSoundOn);
+    persistSettings(difficulty, cursorGuideOn, nextSoundOn);
+  }
+
+  function persistSettings(
+    nextDifficulty: Difficulty,
+    nextCursorGuideOn: boolean,
+    nextSoundOn: boolean,
+  ) {
+    window.localStorage.setItem(
+      "safe-school-settings",
+      JSON.stringify({
+        difficulty: nextDifficulty,
+        cursorGuideOn: nextCursorGuideOn,
+        soundOn: nextSoundOn,
+      }),
+    );
+  }
+
+  function applyDifficulty(nextDifficulty: Difficulty) {
+    const nextCursorGuideOn = difficultyOptions[nextDifficulty].guideDefault;
+    setDifficulty(nextDifficulty);
+    setCursorGuideOn(nextCursorGuideOn);
+    persistSettings(nextDifficulty, nextCursorGuideOn, soundOn);
+    playTone("click");
+  }
+
+  function toggleCursorGuide() {
+    const nextCursorGuideOn = !cursorGuideOn;
+    setCursorGuideOn(nextCursorGuideOn);
+    persistSettings(difficulty, nextCursorGuideOn, soundOn);
+    playTone("click");
   }
 
   function playTone(kind: "good" | "bad" | "click" | "win") {
@@ -1491,6 +1582,7 @@ export default function Home() {
     <main
       className={cx(
         "game-shell",
+        !cursorGuideOn && "guide-off",
         mobileControlMode && !controlsMinimized && "mobile-controller-active",
       )}
     >
@@ -1538,6 +1630,14 @@ export default function Home() {
               {soundOn ? "♫" : "×"}
             </button>
             <button
+              className="icon-button"
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="게임 설정 열기"
+            >
+              ⚙
+            </button>
+            <button
               className="icon-button desktop-only"
               type="button"
               onClick={toggleFullscreen}
@@ -1566,9 +1666,14 @@ export default function Home() {
           />
           <div className="intro-vignette" />
           <div className="intro-topbar">
-            <button className="glass-button" type="button" onClick={() => setTeacherOpen(true)}>
-              교사용 해설
-            </button>
+            <div className="intro-tools">
+              <button className="glass-button" type="button" onClick={() => setSettingsOpen(true)}>
+                <span aria-hidden="true">⚙</span> 설정
+              </button>
+              <button className="glass-button" type="button" onClick={() => setTeacherOpen(true)}>
+                교사용 해설
+              </button>
+            </div>
           </div>
           <div className="intro-copy">
             <span className="mission-kicker">
@@ -1621,7 +1726,21 @@ export default function Home() {
           </div>
           <div className="intro-footer">
             <span>대상 · 초등 4–6학년</span>
-            <span>생활안전 · 복도안전 · 교통안전 · 체육안전 · 물놀이안전 · 실험안전</span>
+            <div className="intro-footer-meta">
+              <span className="intro-safety-topics">
+                생활안전 · 복도안전 · 교통안전 · 체육안전 · 물놀이안전 · 실험안전
+              </span>
+              <a
+                className="creator-credit"
+                href="https://www.instagram.com/kimju.zip/"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="제작자 kimju.zip 인스타그램 열기"
+              >
+                <i className="instagram-mark" aria-hidden="true" />
+                <span>제작자 · @kimju.zip</span>
+              </a>
+            </div>
           </div>
         </section>
       )}
@@ -1644,7 +1763,10 @@ export default function Home() {
                 alt="방과 후 교실. 멀티탭, 가방, 책, 가위, 난방기 주변을 살펴볼 수 있다."
               />
               {mobileControlMode === "explore" && (
-                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+                <ExplorerCursor
+                  locked={cursorGuideOn && targetLocked}
+                  position={playerPosition}
+                />
               )}
               <div className="scan-line" aria-hidden="true" />
               {classroomHazards.map((hazard) => {
@@ -1820,7 +1942,10 @@ export default function Home() {
                 alt="학교 복도에서 달리기, 비상구 앞 적치물, 젖은 바닥, 계단 난간 타기 행동을 살펴볼 수 있는 장면"
               />
               {mobileControlMode === "explore" && (
-                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+                <ExplorerCursor
+                  locked={cursorGuideOn && targetLocked}
+                  position={playerPosition}
+                />
               )}
               {corridorHazards.map((hazard) => {
                 const found = corridorFound.includes(hazard.id);
@@ -1929,7 +2054,10 @@ export default function Home() {
                 alt="학교 앞 횡단보도에서 스마트폰 보행, 주차 차량 사이 횡단, 안전모 없는 자전거 주행을 살펴볼 수 있는 장면"
               />
               {mobileControlMode === "explore" && (
-                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+                <ExplorerCursor
+                  locked={cursorGuideOn && targetLocked}
+                  position={playerPosition}
+                />
               )}
               {trafficSpots.map((spot) => {
                 const found = trafficFound.includes(spot.id);
@@ -2124,7 +2252,10 @@ export default function Home() {
                 alt="학교 체육관에서 기울어진 매트, 바닥의 줄넘기, 흩어진 공, 풀린 운동화 끈을 살펴볼 수 있는 장면"
               />
               {mobileControlMode === "explore" && (
-                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+                <ExplorerCursor
+                  locked={cursorGuideOn && targetLocked}
+                  position={playerPosition}
+                />
               )}
               {gymHazards.map((hazard) => {
                 const found = gymFound.includes(hazard.id);
@@ -2237,7 +2368,10 @@ export default function Home() {
                 alt="학교 수영장에서 달리기, 밀기, 얕은 곳 다이빙, 혼자 수영하는 행동과 안전한 구명조끼 착용을 살펴볼 수 있는 장면"
               />
               {mobileControlMode === "explore" && (
-                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+                <ExplorerCursor
+                  locked={cursorGuideOn && targetLocked}
+                  position={playerPosition}
+                />
               )}
               {poolSpots.map((spot) => {
                 const found = poolFound.includes(spot.id);
@@ -2415,7 +2549,10 @@ export default function Home() {
                 alt="보안경, 보호장갑, 쏟아진 액체, 열원, 잠긴 캐비닛이 있는 과학실"
               />
               {mobileControlMode === "explore" && (
-                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+                <ExplorerCursor
+                  locked={cursorGuideOn && targetLocked}
+                  position={playerPosition}
+                />
               )}
               {labClues.map((clue) => {
                 const found = labFound.includes(clue.id);
@@ -2739,9 +2876,11 @@ export default function Home() {
                 <span>
                   {mobileControlMode === "ox"
                     ? "O 또는 X를 선택하세요"
-                    : targetLocked
-                      ? "단서 근처 · A를 누르세요"
-                      : "세이프봇 이동"}
+                    : cursorGuideOn
+                      ? targetLocked
+                        ? "단서 근처 · A를 누르세요"
+                        : "세이프봇 이동"
+                      : "힌트 없이 주변을 탐색하세요"}
                 </span>
               </div>
               <div className="action-cluster">
@@ -2759,7 +2898,10 @@ export default function Home() {
                   <span>{mobileControlMode === "ox" ? "아니다" : "힌트"}</span>
                 </button>
                 <button
-                  className={cx("game-button primary-game-button", targetLocked && "ready")}
+                  className={cx(
+                    "game-button primary-game-button",
+                    cursorGuideOn && targetLocked && "ready",
+                  )}
                   type="button"
                   onClick={mobilePrimaryAction}
                   disabled={
@@ -2769,7 +2911,13 @@ export default function Home() {
                   aria-label={mobileControlMode === "ox" ? "O, 맞다" : "A, 주변 조사"}
                 >
                   <b>{mobileControlMode === "ox" ? "O" : "A"}</b>
-                  <span>{mobileControlMode === "ox" ? "맞다" : targetLocked ? "조사!" : "조사"}</span>
+                  <span>
+                    {mobileControlMode === "ox"
+                      ? "맞다"
+                      : cursorGuideOn && targetLocked
+                        ? "조사!"
+                        : "조사"}
+                  </span>
                 </button>
               </div>
             </>
@@ -2812,6 +2960,124 @@ export default function Home() {
           <button type="button" onClick={() => setToast(null)} aria-label="알림 닫기">
             ×
           </button>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div
+          className="modal-layer settings-layer"
+          role="presentation"
+          onMouseDown={() => setSettingsOpen(false)}
+        >
+          <section
+            className="settings-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal-heading">
+              <div>
+                <span className="chapter-label">GAME SETTINGS</span>
+                <h2 id="settings-title">플레이 설정</h2>
+              </div>
+              <button type="button" onClick={() => setSettingsOpen(false)} aria-label="설정 닫기">
+                ×
+              </button>
+            </div>
+            <p className="settings-lead">
+              학년 수준을 고르면 조사 범위와 기본 힌트가 달라져요. 아래 스위치로
+              힌트와 음악을 따로 바꿀 수도 있어요.
+            </p>
+
+            <div className="settings-section-heading">
+              <div>
+                <span>난이도</span>
+                <strong>학년별 탐색 수준</strong>
+              </div>
+              <small>현재 · {difficultyOptions[difficulty].label}</small>
+            </div>
+            <div className="difficulty-grid">
+              {(["lower", "upper", "middle"] as Difficulty[]).map((level) => {
+                const option = difficultyOptions[level];
+                return (
+                  <button
+                    className={cx("difficulty-card", difficulty === level && "active")}
+                    type="button"
+                    key={level}
+                    onClick={() => applyDifficulty(level)}
+                    aria-pressed={difficulty === level}
+                  >
+                    <span>{option.grade}</span>
+                    <b>{option.label}</b>
+                    <small>{option.description}</small>
+                    <i aria-hidden="true">{difficulty === level ? "선택됨" : "선택"}</i>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="settings-switches">
+              <div className="setting-row">
+                <div>
+                  <span className="setting-icon" aria-hidden="true">◎</span>
+                  <p>
+                    <b>커서 근접 힌트</b>
+                    <small>위험요소 가까이 가면 초록 표시와 “조사 가능”을 보여줘요.</small>
+                  </p>
+                </div>
+                <button
+                  className={cx("toggle-switch", cursorGuideOn && "on")}
+                  type="button"
+                  role="switch"
+                  aria-checked={cursorGuideOn}
+                  aria-label="커서 근접 힌트"
+                  onClick={toggleCursorGuide}
+                >
+                  <i />
+                  <span>{cursorGuideOn ? "켜짐" : "꺼짐"}</span>
+                </button>
+              </div>
+              <div className="setting-row">
+                <div>
+                  <span className="setting-icon" aria-hidden="true">♫</span>
+                  <p>
+                    <b>배경음과 효과음</b>
+                    <small>장소마다 달라지는 음악과 정답·오답 효과음을 재생해요.</small>
+                  </p>
+                </div>
+                <button
+                  className={cx("toggle-switch", soundOn && "on")}
+                  type="button"
+                  role="switch"
+                  aria-checked={soundOn}
+                  aria-label="배경음과 효과음"
+                  onClick={toggleAudio}
+                >
+                  <i />
+                  <span>{soundOn ? "켜짐" : "꺼짐"}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="creator-panel">
+              <div className="creator-avatar" aria-hidden="true">K</div>
+              <div>
+                <span>CREATED BY</span>
+                <b>kimju.zip</b>
+                <small>학교 안전교육을 더 재미있고 기억에 남게.</small>
+              </div>
+              <a
+                href="https://www.instagram.com/kimju.zip/"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="kimju.zip 인스타그램 열기"
+              >
+                <i className="instagram-mark" aria-hidden="true" />
+                Instagram
+              </a>
+            </div>
+          </section>
         </div>
       )}
 
