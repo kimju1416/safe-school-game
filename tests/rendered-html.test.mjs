@@ -108,3 +108,36 @@ test("includes official reference links and accessibility essentials", async () 
 
   await access(root);
 });
+
+test("includes mobile game controls for exploration and OX play", async () => {
+  const [page, css] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /function VirtualJoystick/);
+  assert.match(page, /setPointerCapture/);
+  assert.match(page, /mobile-gamepad/);
+  assert.match(page, /mobilePrimaryAction/);
+  assert.match(page, /mobileSecondaryAction/);
+  assert.match(page, /O 또는 X를 선택하세요/);
+  assert.match(css, /touch-action:\s*none/);
+  assert.match(css, /@media \(max-width: 820px\)/);
+  assert.match(css, /\.explorer-cursor\.target-locked/);
+});
+
+test("has a repository-safe GitHub Pages build", async () => {
+  const [page, entry, config, workflow] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../pages-entry.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../vite.pages.config.ts", import.meta.url), "utf8"),
+    readFile(new URL("../.github/workflows/pages.yml", import.meta.url), "utf8"),
+  ]);
+
+  assert.doesNotMatch(page, /src="\/assets\//);
+  assert.match(entry, /createRoot\(root\)/);
+  assert.match(config, /VITE_BASE_PATH/);
+  assert.match(config, /outDir:\s*"pages-dist"/);
+  assert.match(workflow, /actions\/deploy-pages@v4/);
+  assert.match(workflow, /VITE_BASE_PATH: \/safe-school-game\//);
+});

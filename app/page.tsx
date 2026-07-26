@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FormEvent,
+  PointerEvent as ReactPointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 type Phase =
   | "intro"
@@ -296,6 +303,110 @@ function formatTime(totalSeconds: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+type JoystickVector = {
+  x: number;
+  y: number;
+};
+
+type SceneTarget = {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+function VirtualJoystick({
+  disabled,
+  onVectorChange,
+}: {
+  disabled: boolean;
+  onVectorChange: (vector: JoystickVector) => void;
+}) {
+  const baseRef = useRef<HTMLDivElement>(null);
+  const [knob, setKnob] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (!disabled) return;
+    setKnob({ x: 0, y: 0 });
+    onVectorChange({ x: 0, y: 0 });
+  }, [disabled, onVectorChange]);
+
+  function updateVector(event: ReactPointerEvent<HTMLDivElement>) {
+    if (disabled || !baseRef.current) return;
+    const rect = baseRef.current.getBoundingClientRect();
+    const rawX = event.clientX - (rect.left + rect.width / 2);
+    const rawY = event.clientY - (rect.top + rect.height / 2);
+    const radius = rect.width * 0.32;
+    const distance = Math.hypot(rawX, rawY);
+    const scale = distance > radius ? radius / distance : 1;
+    const x = rawX * scale;
+    const y = rawY * scale;
+    setKnob({ x, y });
+    onVectorChange({
+      x: Math.max(-1, Math.min(1, x / radius)),
+      y: Math.max(-1, Math.min(1, y / radius)),
+    });
+  }
+
+  function stop() {
+    setKnob({ x: 0, y: 0 });
+    onVectorChange({ x: 0, y: 0 });
+  }
+
+  return (
+    <div
+      ref={baseRef}
+      className={cx("virtual-joystick", disabled && "disabled")}
+      role="application"
+      aria-label={disabled ? "OX 퀴즈에서는 조이스틱을 사용하지 않습니다" : "세이프봇 이동 조이스틱"}
+      onPointerDown={(event) => {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        updateVector(event);
+      }}
+      onPointerMove={(event) => {
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) updateVector(event);
+      }}
+      onPointerUp={(event) => {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+        stop();
+      }}
+      onPointerCancel={stop}
+    >
+      <span className="joystick-direction north" aria-hidden="true">▲</span>
+      <span className="joystick-direction east" aria-hidden="true">▶</span>
+      <span className="joystick-direction south" aria-hidden="true">▼</span>
+      <span className="joystick-direction west" aria-hidden="true">◀</span>
+      <div
+        className="joystick-knob"
+        style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }}
+        aria-hidden="true"
+      >
+        {disabled ? "OX" : ""}
+      </div>
+    </div>
+  );
+}
+
+function ExplorerCursor({
+  locked,
+  position,
+}: {
+  locked: boolean;
+  position: { x: number; y: number };
+}) {
+  return (
+    <div
+      className={cx("explorer-cursor", locked && "target-locked")}
+      style={{ left: `${position.x}%`, top: `${position.y}%` }}
+      aria-hidden="true"
+    >
+      <img src="assets/safebot-character.png" alt="" />
+      <span>{locked ? "조사 가능" : "이동 중"}</span>
+    </div>
+  );
+}
+
 export default function Home() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [score, setScore] = useState(0);
@@ -327,6 +438,9 @@ export default function Home() {
   const [labUnlocked, setLabUnlocked] = useState(false);
   const [hintTarget, setHintTarget] = useState<string | null>(null);
   const [best, setBest] = useState<{ score: number; time: number } | null>(null);
+  const [playerPosition, setPlayerPosition] = useState({ x: 50, y: 70 });
+  const [joystickVector, setJoystickVector] = useState<JoystickVector>({ x: 0, y: 0 });
+  const [controlsMinimized, setControlsMinimized] = useState(false);
   const audioRef = useRef<AudioContext | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -351,6 +465,44 @@ export default function Home() {
       ),
     [phase],
   );
+
+  const mobileControlMode: "explore" | "ox" | null =
+    phase === "classroom"
+      ? "explore"
+      : phase === "classroom-quiz"
+        ? "ox"
+        : phase === "traffic" && trafficFound.length < trafficSpots.length
+          ? "explore"
+          : phase === "traffic" && !trafficQuizDone
+            ? "ox"
+            : phase === "pool" && poolFound.length < poolSpots.length
+              ? "explore"
+              : phase === "lab" && labFound.length < labClues.length
+                ? "explore"
+                : null;
+
+  let controllerTargets: SceneTarget[] = [];
+  if (phase === "classroom") {
+    controllerTargets = classroomHazards.filter((item) => !classFound.includes(item.id));
+  } else if (phase === "traffic" && trafficFound.length < trafficSpots.length) {
+    controllerTargets = trafficSpots.filter((item) => !trafficFound.includes(item.id));
+  } else if (phase === "pool" && poolFound.length < poolSpots.length) {
+    controllerTargets = poolSpots.filter((item) => !poolFound.includes(item.id));
+  } else if (phase === "lab" && labFound.length < labClues.length) {
+    controllerTargets = labClues.filter((item) => !labFound.includes(item.id));
+  }
+
+  const nearestTarget = controllerTargets
+    .map((target) => {
+      const centerX = target.x + target.w / 2;
+      const centerY = target.y + target.h / 2;
+      return {
+        ...target,
+        distance: Math.hypot((centerX - playerPosition.x) * 1.2, centerY - playerPosition.y),
+      };
+    })
+    .sort((a, b) => a.distance - b.distance)[0];
+  const targetLocked = Boolean(nearestTarget && nearestTarget.distance <= 14);
 
   useEffect(() => {
     const raw = window.localStorage.getItem("safe-school-best");
@@ -382,6 +534,36 @@ export default function Home() {
       return next;
     });
   }, [phase, score, elapsed]);
+
+  useEffect(() => {
+    setPlayerPosition({ x: 50, y: 70 });
+    setJoystickVector({ x: 0, y: 0 });
+    setControlsMinimized(false);
+  }, [phase]);
+
+  useEffect(() => {
+    if (
+      mobileControlMode !== "explore" ||
+      controlsMinimized ||
+      (joystickVector.x === 0 && joystickVector.y === 0)
+    ) {
+      return;
+    }
+
+    let frame = 0;
+    let previous = performance.now();
+    const move = (now: number) => {
+      const delta = Math.min(32, now - previous);
+      previous = now;
+      setPlayerPosition((position) => ({
+        x: Math.max(4, Math.min(96, position.x + joystickVector.x * delta * 0.085)),
+        y: Math.max(6, Math.min(92, position.y + joystickVector.y * delta * 0.085)),
+      }));
+      frame = requestAnimationFrame(move);
+    };
+    frame = requestAnimationFrame(move);
+    return () => cancelAnimationFrame(frame);
+  }, [controlsMinimized, joystickVector, mobileControlMode]);
 
   useEffect(
     () => () => {
@@ -717,17 +899,70 @@ export default function Home() {
     }
   }
 
+  function vibrate(pattern: number | number[]) {
+    if ("vibrate" in navigator) navigator.vibrate(pattern);
+  }
+
+  function mobilePrimaryAction() {
+    if (mobileControlMode === "ox") {
+      if (phase === "classroom-quiz") answerClassQuiz("O");
+      if (phase === "traffic") answerTrafficQuiz("O");
+      vibrate(20);
+      return;
+    }
+
+    if (!nearestTarget || !targetLocked) {
+      playTone("bad");
+      vibrate([20, 35, 20]);
+      announce(
+        {
+          title: "조금 더 가까이 가세요",
+          message: "왼쪽 조이스틱으로 세이프봇을 단서 가까이 이동한 뒤 A 버튼을 누르세요.",
+          tone: "warn",
+        },
+        2200,
+      );
+      return;
+    }
+
+    if (phase === "classroom") findClassHazard(nearestTarget.id);
+    if (phase === "traffic") findTrafficSpot(nearestTarget.id);
+    if (phase === "pool") findPoolSpot(nearestTarget.id);
+    if (phase === "lab") findLabClue(nearestTarget.id);
+    vibrate(28);
+  }
+
+  function mobileSecondaryAction() {
+    if (mobileControlMode === "ox") {
+      if (phase === "classroom-quiz") answerClassQuiz("X");
+      if (phase === "traffic") answerTrafficQuiz("X");
+      vibrate(20);
+      return;
+    }
+
+    if (phase === "classroom") useHint(classroomHazards, classFound);
+    if (phase === "traffic") useHint(trafficSpots, trafficFound);
+    if (phase === "pool") useHint(poolSpots, poolFound);
+    if (phase === "lab") useHint(labClues, labFound);
+    vibrate(16);
+  }
+
   function finishGame() {
     setPhase("final");
     playTone("win");
   }
 
   return (
-    <main className="game-shell">
+    <main
+      className={cx(
+        "game-shell",
+        mobileControlMode && !controlsMinimized && "mobile-controller-active",
+      )}
+    >
       {phase !== "intro" && phase !== "final" && (
         <header className="hud" aria-label="게임 상태">
           <div className="hud-brand">
-            <img className="hud-avatar" src="/assets/safebot-character.png" alt="" />
+            <img className="hud-avatar" src="assets/safebot-character.png" alt="" />
             <div>
               <span className="eyebrow">SAFE SCHOOL</span>
               <strong>잠긴 안전코어</strong>
@@ -791,7 +1026,7 @@ export default function Home() {
         <section className="intro-screen">
           <img
             className="full-bleed-image"
-            src="/assets/school-entrance.png"
+            src="assets/school-entrance.png"
             alt="석양의 학교 입구에서 안전 로봇이 모험을 안내하는 모습"
           />
           <div className="intro-vignette" />
@@ -847,7 +1082,7 @@ export default function Home() {
           <div className="intro-side-card">
             <img
               className="safebot-avatar"
-              src="/assets/safebot-character.png"
+              src="assets/safebot-character.png"
               alt="안전 안내 로봇 세이프봇"
             />
             <div>
@@ -876,9 +1111,12 @@ export default function Home() {
             </div>
             <div className="scene-frame">
               <img
-                src="/assets/classroom.png"
+                src="assets/classroom.png"
                 alt="방과 후 교실. 멀티탭, 가방, 책, 가위, 난방기 주변을 살펴볼 수 있다."
               />
+              {mobileControlMode === "explore" && (
+                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+              )}
               <div className="scan-line" aria-hidden="true" />
               {classroomHazards.map((hazard) => {
                 const found = classFound.includes(hazard.id);
@@ -974,7 +1212,7 @@ export default function Home() {
         <section className="quiz-screen">
           <img
             className="full-bleed-image blurred"
-            src="/assets/classroom.png"
+            src="assets/classroom.png"
             alt=""
             aria-hidden="true"
           />
@@ -1051,9 +1289,12 @@ export default function Home() {
             </div>
             <div className="scene-frame">
               <img
-                src="/assets/traffic-school-zone.png"
+                src="assets/traffic-school-zone.png"
                 alt="학교 앞 횡단보도에서 스마트폰 보행, 주차 차량 사이 횡단, 안전모 없는 자전거 주행을 살펴볼 수 있는 장면"
               />
+              {mobileControlMode === "explore" && (
+                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+              )}
               {trafficSpots.map((spot) => {
                 const found = trafficFound.includes(spot.id);
                 return (
@@ -1091,7 +1332,7 @@ export default function Home() {
 
           <aside className="mission-panel traffic-panel">
             <div className="guide-tip">
-              <img src="/assets/safebot-character.png" alt="" />
+              <img src="assets/safebot-character.png" alt="" />
               <p>
                 <b>세이프봇</b>
                 “안전한 친구와 위험한 친구의 차이를 그림에서 찾아봐!”
@@ -1220,9 +1461,12 @@ export default function Home() {
             </div>
             <div className="scene-frame pool-frame">
               <img
-                src="/assets/school-pool.png"
+                src="assets/school-pool.png"
                 alt="학교 수영장에서 달리기, 밀기, 얕은 곳 다이빙, 혼자 수영하는 행동과 안전한 구명조끼 착용을 살펴볼 수 있는 장면"
               />
+              {mobileControlMode === "explore" && (
+                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+              )}
               {poolSpots.map((spot) => {
                 const found = poolFound.includes(spot.id);
                 return (
@@ -1260,7 +1504,7 @@ export default function Home() {
 
           <aside className="mission-panel pool-panel">
             <div className="guide-tip aqua-tip">
-              <img src="/assets/safebot-character.png" alt="" />
+              <img src="assets/safebot-character.png" alt="" />
               <p>
                 <b>세이프봇</b>
                 “물은 즐겁지만 작은 장난도 큰 위험이 될 수 있어!”
@@ -1362,9 +1606,12 @@ export default function Home() {
             </div>
             <div className="scene-frame">
               <img
-                src="/assets/science-lab.png"
+                src="assets/science-lab.png"
                 alt="보안경, 보호장갑, 쏟아진 액체, 열원, 잠긴 캐비닛이 있는 과학실"
               />
+              {mobileControlMode === "explore" && (
+                <ExplorerCursor locked={targetLocked} position={playerPosition} />
+              )}
               {labClues.map((clue) => {
                 const found = labFound.includes(clue.id);
                 return (
@@ -1488,7 +1735,7 @@ export default function Home() {
         <section className="final-screen">
           <img
             className="full-bleed-image"
-            src="/assets/schoolyard-final.png"
+            src="assets/schoolyard-final.png"
             alt="학교 운동장에서 학생들과 선생님이 안전코어 복구를 축하하는 모습"
           />
           <div className="final-vignette" />
@@ -1547,6 +1794,70 @@ export default function Home() {
               </button>
             </div>
           </div>
+        </section>
+      )}
+
+      {mobileControlMode && (
+        <section
+          className={cx("mobile-gamepad", controlsMinimized && "minimized")}
+          aria-label={mobileControlMode === "ox" ? "모바일 OX 선택 버튼" : "모바일 탐색 조작계"}
+        >
+          <button
+            className="gamepad-toggle"
+            type="button"
+            onClick={() => {
+              setControlsMinimized((value) => !value);
+              setJoystickVector({ x: 0, y: 0 });
+            }}
+            aria-label={controlsMinimized ? "모바일 조작계 펼치기" : "모바일 조작계 접기"}
+          >
+            {controlsMinimized ? "🎮" : "⌄"}
+          </button>
+          {!controlsMinimized && (
+            <>
+              <div className="joystick-wrap">
+                <VirtualJoystick
+                  disabled={mobileControlMode === "ox"}
+                  onVectorChange={setJoystickVector}
+                />
+                <span>
+                  {mobileControlMode === "ox"
+                    ? "O 또는 X를 선택하세요"
+                    : targetLocked
+                      ? "단서 근처 · A를 누르세요"
+                      : "세이프봇 이동"}
+                </span>
+              </div>
+              <div className="action-cluster">
+                <button
+                  className="game-button secondary-game-button"
+                  type="button"
+                  onClick={mobileSecondaryAction}
+                  disabled={
+                    (phase === "classroom-quiz" && classQuizLocked) ||
+                    (phase === "traffic" && trafficQuizLocked)
+                  }
+                  aria-label={mobileControlMode === "ox" ? "X, 아니다" : "B, 힌트 사용"}
+                >
+                  <b>{mobileControlMode === "ox" ? "X" : "B"}</b>
+                  <span>{mobileControlMode === "ox" ? "아니다" : "힌트"}</span>
+                </button>
+                <button
+                  className={cx("game-button primary-game-button", targetLocked && "ready")}
+                  type="button"
+                  onClick={mobilePrimaryAction}
+                  disabled={
+                    (phase === "classroom-quiz" && classQuizLocked) ||
+                    (phase === "traffic" && trafficQuizLocked)
+                  }
+                  aria-label={mobileControlMode === "ox" ? "O, 맞다" : "A, 주변 조사"}
+                >
+                  <b>{mobileControlMode === "ox" ? "O" : "A"}</b>
+                  <span>{mobileControlMode === "ox" ? "맞다" : targetLocked ? "조사!" : "조사"}</span>
+                </button>
+              </div>
+            </>
+          )}
         </section>
       )}
 
