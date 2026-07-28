@@ -77,6 +77,12 @@ input:focus-visible {
   overflow: hidden;
 }
 
+/* 캐릭터 선택이 들어가면서 작은 화면에서 내용이 길어질 수 있어 세로 스크롤을 허용한다 */
+.intro-screen {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .final-screen {
   overflow-x: hidden;
   overflow-y: auto;
@@ -282,6 +288,87 @@ input:focus-visible {
   color: rgba(255, 255, 255, 0.78);
   line-height: 1.8;
   font-size: clamp(14px, 1.35vw, 19px);
+}
+
+/* 인트로 캐릭터 선택 */
+.hero-picker {
+  margin-top: 30px;
+}
+
+.hero-picker > b {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  color: var(--mint);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.hero-picker > b small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.hero-choice-row {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hero-choice {
+  width: 78px;
+  padding: 0 0 8px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.74);
+  background: rgba(5, 24, 40, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.hero-choice img {
+  width: 100%;
+  height: 76px;
+  object-fit: cover;
+  object-position: 50% 20%;
+  background: #08243a;
+}
+
+.hero-choice span {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hero-choice:hover,
+.hero-choice:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(105, 224, 193, 0.55);
+}
+
+.hero-choice.selected {
+  color: white;
+  background: rgba(105, 224, 193, 0.15);
+  border-color: var(--mint);
+  box-shadow:
+    inset 0 0 0 1px var(--mint),
+    0 10px 24px rgba(0, 0, 0, 0.34);
+}
+
+.hero-preview {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
 }
 
 .intro-actions {
@@ -621,12 +708,28 @@ input:focus-visible {
   box-shadow: inset 0 0 80px rgba(2, 13, 24, 0.36);
 }
 
-.scene-frame img {
+/* 배경 이미지 원본 비율(1672x941)을 그대로 유지하는 무대.
+   프레임 크기와 상관없이 이미지가 잘리지 않으므로,
+   %로 지정한 위험요소 좌표가 화면 크기와 무관하게 항상 실제 물건 위에 정확히 얹힌다. */
+.scene-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 1672 / 941;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.scene-stage > img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
 }
 
 .scene-caption {
@@ -2015,6 +2118,22 @@ input:focus-visible {
   font-size: 30px;
 }
 
+/* 마지막 화면 방패에는 플레이어가 고른 히어로가 들어간다 */
+.final-hero-badge {
+  width: 96px;
+  height: 107px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #9fe8d5, #4bbfa4);
+  filter: drop-shadow(0 12px 22px rgba(105, 224, 193, 0.3));
+}
+
+.final-hero-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 16%;
+}
+
 .final-card h1 {
   margin: 15px 0;
   font-family: Georgia, "Noto Serif KR", serif;
@@ -3267,9 +3386,16 @@ input:focus-visible {
 
   .scene-frame {
     flex: none;
-    height: 61vw;
-    min-height: 270px;
+    /* 모바일에서는 프레임 자체를 배경 이미지 비율에 맞춰 여백 없이 꽉 채운다 */
+    aspect-ratio: 1672 / 941;
+    height: auto;
+    min-height: 0;
     border-radius: 16px;
+  }
+
+  .scene-caption {
+    padding: 6px 9px;
+    font-size: 9px;
   }
 
   .mission-panel {
@@ -3320,7 +3446,32 @@ input:focus-visible {
 
   .intro-copy {
     width: auto;
-    padding: min(40vh, 320px) 20px 90px;
+    padding: min(17vh, 140px) 20px 96px;
+  }
+
+  .hero-picker {
+    margin-top: 20px;
+  }
+
+  .hero-choice {
+    width: calc((100% - 16px) / 3);
+    padding-bottom: 6px;
+  }
+
+  .hero-choice img {
+    height: 62px;
+  }
+
+  .hero-choice span {
+    font-size: 10px;
+  }
+
+  .hero-choice-row {
+    gap: 8px;
+  }
+
+  .intro-actions {
+    margin-top: 22px;
   }
 
   .intro-copy h1 {
@@ -3436,7 +3587,9 @@ input:focus-visible {
   .scene-caption {
     left: 10px;
     right: 10px;
-    bottom: 9px;
+    /* 아래쪽 위험요소를 가리지 않도록 좁은 화면에서는 위에 붙인다 */
+    top: 8px;
+    bottom: auto;
     text-align: center;
   }
 

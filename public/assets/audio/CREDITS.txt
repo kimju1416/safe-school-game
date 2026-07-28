@@ -1,0 +1,29 @@
+배경음악 출처 (모두 CC0 / 퍼블릭 도메인 — 저작자 표시 의무 없음)
+================================================================
+
+1) bgm-intro.mp3 — "A Legend Will Rise (Orchestral)"
+   제작: CodeManu
+   라이선스: CC0 1.0 (퍼블릭 도메인)
+   출처: https://opengameart.org/content/a-legend-will-rise-orchestral
+   사용 구간: 시작 화면 연출, 마지막 수료 화면
+
+2) bgm-search.mp3 — "Covert Operations"
+   제작: artisticdude
+   라이선스: CC0 1.0 (퍼블릭 도메인)
+   출처: https://opengameart.org/content/covert-operations
+   사용 구간: 교실, 복도, 과학실 (위험요소 탐색)
+
+3) bgm-action.mp3 — "Battle Theme A"
+   제작: cynicmusic (cynicmusic.com / pixelsphere.org)
+   라이선스: CC0 1.0 (퍼블릭 도메인)
+   출처: https://opengameart.org/content/battle-theme-a
+   사용 구간: 통학로, 체육관, 수영장 (박진감 있는 미션)
+
+4) bgm-quiz.mp3 — "Determination"
+   제작: artisticdude
+   라이선스: CC0 1.0 (퍼블릭 도메인)
+   출처: https://opengameart.org/content/determination
+   사용 구간: OX 퀴즈, 순서 맞추기 (제한시간 긴장감)
+
+모두 CC0라 별도 표시 없이 수업·배포에 자유롭게 쓸 수 있으나,
+교육 자료의 출처 표기 관행에 따라 위와 같이 남겨 둔다.

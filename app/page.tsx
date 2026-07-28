@@ -383,10 +383,10 @@ const labClues = [
     label: "쏟아진 액체",
     icon: "💧",
     digit: "8",
-    x: 48,
-    y: 60,
-    w: 18,
-    h: 22,
+    x: 45,
+    y: 58,
+    w: 22,
+    h: 28,
     lesson: "정체를 모르는 물질은 만지거나 냄새 맡지 말고 즉시 선생님께 알려요.",
   },
   {
@@ -420,6 +420,60 @@ const rewardBadges = [
   { icon: "◆", title: "안전 실험가", subject: "실험안전" },
 ];
 
+type SafetyHero = {
+  id: string;
+  name: string;
+  role: string;
+  image: string;
+  message: string;
+};
+
+/* 플레이어가 고르는 안전 히어로 6종 — 외형과 응원 문구만 달라지고 난이도는 같다 */
+const safetyHeroes: SafetyHero[] = [
+  {
+    id: "robot",
+    name: "세이프봇",
+    role: "안전 안내 로봇",
+    image: "assets/characters/hero-robot.jpg",
+    message: "정답을 외우는 것보다 위험을 먼저 발견하는 눈이 중요해!",
+  },
+  {
+    id: "fire",
+    name: "불꽃반장",
+    role: "화재안전 대원",
+    image: "assets/characters/hero-fire.jpg",
+    message: "불은 처음 1분이 가장 중요해. 위험한 자리를 미리 찾아 두자!",
+  },
+  {
+    id: "traffic",
+    name: "초록불",
+    role: "교통안전 지킴이",
+    image: "assets/characters/hero-traffic.jpg",
+    message: "멈추고, 보고, 다시 한 번! 길에서는 그게 제일 빠른 길이야.",
+  },
+  {
+    id: "sports",
+    name: "튼튼코치",
+    role: "체육안전 코치",
+    image: "assets/characters/hero-sports.jpg",
+    message: "준비운동과 정리정돈만 잘해도 다칠 일이 확 줄어들어!",
+  },
+  {
+    id: "water",
+    name: "물결지기",
+    role: "물놀이안전 요원",
+    image: "assets/characters/hero-water.jpg",
+    message: "물가에서는 장난이 곧 사고야. 눈으로 먼저 확인하자!",
+  },
+  {
+    id: "lab",
+    name: "실험박사",
+    role: "실험안전 연구원",
+    image: "assets/characters/hero-lab.jpg",
+    message: "모르는 물질은 만지지도, 냄새 맡지도 않기. 우리 약속!",
+  },
+];
+
 const phaseOrder: Phase[] = [
   "intro",
   "classroom",
@@ -434,89 +488,41 @@ const phaseOrder: Phase[] = [
   "final",
 ];
 
-type MusicTheme = {
-  notes: number[];
-  interval: number;
-  duration: number;
-  volume: number;
-  wave: OscillatorType;
+/* 배경음악 — 전부 CC0(퍼블릭 도메인) 음원. 출처는 public/assets/audio/CREDITS.txt 참고 */
+const musicTracks = {
+  intro: "assets/audio/bgm-intro.mp3",
+  search: "assets/audio/bgm-search.mp3",
+  action: "assets/audio/bgm-action.mp3",
+  quiz: "assets/audio/bgm-quiz.mp3",
+} as const;
+
+type TrackKey = keyof typeof musicTracks;
+
+/* 같은 트랙이 이어지는 구간은 음악을 끊지 않고 계속 이어서 재생한다 */
+const phaseTrack: Record<Exclude<Phase, "intro">, TrackKey> = {
+  classroom: "search",
+  "classroom-quiz": "quiz",
+  corridor: "search",
+  traffic: "action",
+  "traffic-quiz": "quiz",
+  gym: "action",
+  pool: "action",
+  "pool-sequence": "quiz",
+  lab: "search",
+  final: "intro",
 };
 
-const musicThemes: Record<Exclude<Phase, "intro">, MusicTheme> = {
-  classroom: {
-    notes: [261.63, 329.63, 392, 329.63, 293.66, 349.23, 392, 349.23],
-    interval: 720,
-    duration: 1.15,
-    volume: 0.008,
-    wave: "triangle",
-  },
-  "classroom-quiz": {
-    notes: [392, 523.25, 466.16, 587.33, 523.25, 659.25],
-    interval: 520,
-    duration: 0.7,
-    volume: 0.007,
-    wave: "square",
-  },
-  corridor: {
-    notes: [246.94, 293.66, 369.99, 293.66, 261.63, 329.63, 392, 329.63],
-    interval: 560,
-    duration: 0.76,
-    volume: 0.007,
-    wave: "triangle",
-  },
-  traffic: {
-    notes: [293.66, 369.99, 440, 369.99, 329.63, 392, 493.88, 392],
-    interval: 470,
-    duration: 0.62,
-    volume: 0.007,
-    wave: "triangle",
-  },
-  "traffic-quiz": {
-    notes: [392, 493.88, 587.33, 523.25, 440, 554.37],
-    interval: 500,
-    duration: 0.68,
-    volume: 0.007,
-    wave: "square",
-  },
-  gym: {
-    notes: [329.63, 392, 493.88, 392, 369.99, 440, 523.25, 440],
-    interval: 410,
-    duration: 0.56,
-    volume: 0.007,
-    wave: "square",
-  },
-  pool: {
-    notes: [349.23, 440, 523.25, 440, 392, 493.88, 587.33, 493.88],
-    interval: 790,
-    duration: 1.35,
-    volume: 0.008,
-    wave: "sine",
-  },
-  "pool-sequence": {
-    notes: [440, 523.25, 659.25, 523.25, 493.88, 587.33],
-    interval: 620,
-    duration: 0.9,
-    volume: 0.008,
-    wave: "sine",
-  },
-  lab: {
-    notes: [220, 261.63, 329.63, 246.94, 293.66, 369.99, 293.66, 246.94],
-    interval: 610,
-    duration: 0.95,
-    volume: 0.007,
-    wave: "triangle",
-  },
-  final: {
-    notes: [523.25, 659.25, 783.99, 1046.5, 783.99, 659.25],
-    interval: 450,
-    duration: 0.75,
-    volume: 0.009,
-    wave: "sine",
-  },
-};
+const MUSIC_VOLUME = 0.4;
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
+}
+
+/* 이름 끝 받침에 맞춰 "와/과"를 고른다 (세이프봇과, 튼튼코치와) */
+function withParticle(name: string) {
+  const code = name.charCodeAt(name.length - 1);
+  const hasFinalConsonant = code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 !== 0;
+  return `${name}${hasFinalConsonant ? "과" : "와"}`;
 }
 
 function formatTime(totalSeconds: number) {
@@ -581,7 +587,7 @@ function VirtualJoystick({
       ref={baseRef}
       className={cx("virtual-joystick", disabled && "disabled")}
       role="application"
-      aria-label={disabled ? "OX 퀴즈에서는 조이스틱을 사용하지 않습니다" : "세이프봇 이동 조이스틱"}
+      aria-label={disabled ? "OX 퀴즈에서는 조이스틱을 사용하지 않습니다" : "캐릭터 이동 조이스틱"}
       onPointerDown={(event) => {
         event.currentTarget.setPointerCapture(event.pointerId);
         updateVector(event);
@@ -613,9 +619,11 @@ function VirtualJoystick({
 function ExplorerCursor({
   locked,
   position,
+  heroImage,
 }: {
   locked: boolean;
   position: { x: number; y: number };
+  heroImage: string;
 }) {
   return (
     <div
@@ -623,7 +631,7 @@ function ExplorerCursor({
       style={{ left: `${position.x}%`, top: `${position.y}%` }}
       aria-hidden="true"
     >
-      <img src="assets/safebot-character.png" alt="" />
+      <img src={heroImage} alt="" />
       <span>{locked ? "조사 가능" : "이동 중"}</span>
     </div>
   );
@@ -635,6 +643,7 @@ export default function Home() {
   const [elapsed, setElapsed] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
   const [difficulty, setDifficulty] = useState<Difficulty>("upper");
+  const [heroId, setHeroId] = useState(safetyHeroes[0].id);
   const [cursorGuideOn, setCursorGuideOn] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [hints, setHints] = useState(5);
@@ -675,8 +684,9 @@ export default function Home() {
   const [joystickVector, setJoystickVector] = useState<JoystickVector>({ x: 0, y: 0 });
   const [controlsMinimized, setControlsMinimized] = useState(false);
   const audioRef = useRef<AudioContext | null>(null);
-  const musicTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const musicStepRef = useRef(0);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const bgmKeyRef = useRef<TrackKey | null>(null);
+  const bgmFadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -754,6 +764,8 @@ export default function Home() {
       nearestTarget.distance <= difficultyOptions[difficulty].lockDistance,
   );
 
+  const hero = safetyHeroes.find((item) => item.id === heroId) ?? safetyHeroes[0];
+
   useEffect(() => {
     const raw = window.localStorage.getItem("safe-school-best");
     if (raw) {
@@ -771,9 +783,13 @@ export default function Home() {
           difficulty?: Difficulty;
           cursorGuideOn?: boolean;
           soundOn?: boolean;
+          heroId?: string;
         };
         if (saved.difficulty && saved.difficulty in difficultyOptions) {
           setDifficulty(saved.difficulty);
+        }
+        if (saved.heroId && safetyHeroes.some((item) => item.id === saved.heroId)) {
+          setHeroId(saved.heroId);
         }
         if (typeof saved.cursorGuideOn === "boolean") {
           setCursorGuideOn(saved.cursorGuideOn);
@@ -838,10 +854,11 @@ export default function Home() {
   }, [controlsMinimized, joystickVector, mobileControlMode]);
 
   useEffect(() => {
-    stopBackgroundMusic();
-    if (!soundOn || phase === "intro") return;
+    if (!soundOn || phase === "intro") {
+      stopBackgroundMusic();
+      return;
+    }
     startBackgroundMusic(phase);
-    return stopBackgroundMusic;
   }, [phase, soundOn]);
 
   useEffect(
@@ -868,50 +885,71 @@ export default function Home() {
     return context;
   }
 
-  function stopBackgroundMusic() {
-    if (!musicTimerRef.current) return;
-    clearInterval(musicTimerRef.current);
-    musicTimerRef.current = null;
+  function clearMusicFade() {
+    if (!bgmFadeRef.current) return;
+    clearInterval(bgmFadeRef.current);
+    bgmFadeRef.current = null;
   }
 
-  function playAmbientNote(context: AudioContext, frequency: number, theme: MusicTheme) {
-    const now = context.currentTime;
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = theme.wave;
-    oscillator.frequency.setValueAtTime(frequency, now);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(theme.volume, now + 0.045);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + theme.duration);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    oscillator.start(now);
-    oscillator.stop(now + theme.duration + 0.06);
+  /* 볼륨을 목표치까지 부드럽게 올리거나 내린다 */
+  function fadeMusic(target: number, onDone?: () => void) {
+    const audio = bgmRef.current;
+    if (!audio) return;
+    clearMusicFade();
+    const step = 0.05;
+    bgmFadeRef.current = setInterval(() => {
+      const current = audio.volume;
+      const next =
+        current < target ? Math.min(target, current + step) : Math.max(target, current - step);
+      audio.volume = next;
+      if (Math.abs(next - target) < 0.001) {
+        clearMusicFade();
+        onDone?.();
+      }
+    }, 40);
+  }
+
+  function stopBackgroundMusic() {
+    const audio = bgmRef.current;
+    bgmKeyRef.current = null;
+    if (!audio) return;
+    clearMusicFade();
+    audio.pause();
+    audio.volume = 0;
   }
 
   function startBackgroundMusic(targetPhase: Exclude<Phase, "intro">) {
-    const context = getAudioContext();
-    if (!context) return;
-    const theme = musicThemes[targetPhase];
-    musicStepRef.current = 0;
+    const key = phaseTrack[targetPhase];
+    let audio = bgmRef.current;
 
-    const playNext = () => {
-      const step = musicStepRef.current;
-      const frequency = theme.notes[step % theme.notes.length];
-      playAmbientNote(context, frequency, theme);
-      if (step % 4 === 0) {
-        playAmbientNote(context, frequency / 2, {
-          ...theme,
-          duration: theme.duration * 1.55,
-          volume: theme.volume * 0.36,
-          wave: "sine",
-        });
-      }
-      musicStepRef.current = step + 1;
-    };
+    if (!audio) {
+      audio = new Audio();
+      audio.loop = true;
+      audio.preload = "auto";
+      audio.volume = 0;
+      bgmRef.current = audio;
+    }
 
-    playNext();
-    musicTimerRef.current = setInterval(playNext, theme.interval);
+    /* 같은 트랙이 이미 흐르고 있으면 끊지 않고 그대로 이어 간다 */
+    if (bgmKeyRef.current === key && !audio.paused) {
+      fadeMusic(MUSIC_VOLUME);
+      return;
+    }
+
+    clearMusicFade();
+    audio.pause();
+    audio.src = musicTracks[key];
+    audio.currentTime = 0;
+    audio.volume = 0;
+    bgmKeyRef.current = key;
+
+    void audio
+      .play()
+      .then(() => fadeMusic(MUSIC_VOLUME))
+      .catch(() => {
+        /* 브라우저가 자동재생을 막은 경우 — 다음 사용자 조작에서 다시 시도된다 */
+        bgmKeyRef.current = null;
+      });
   }
 
   function toggleAudio() {
@@ -925,6 +963,7 @@ export default function Home() {
     nextDifficulty: Difficulty,
     nextCursorGuideOn: boolean,
     nextSoundOn: boolean,
+    nextHeroId: string = heroId,
   ) {
     window.localStorage.setItem(
       "safe-school-settings",
@@ -932,8 +971,15 @@ export default function Home() {
         difficulty: nextDifficulty,
         cursorGuideOn: nextCursorGuideOn,
         soundOn: nextSoundOn,
+        heroId: nextHeroId,
       }),
     );
+  }
+
+  function selectHero(nextHeroId: string) {
+    setHeroId(nextHeroId);
+    persistSettings(difficulty, cursorGuideOn, soundOn, nextHeroId);
+    playTone("click");
   }
 
   function applyDifficulty(nextDifficulty: Difficulty) {
@@ -1427,7 +1473,11 @@ export default function Home() {
 
     context.fillStyle = "#81919a";
     context.font = '500 16px "Malgun Gothic", sans-serif';
-    context.fillText("학교 안전 탈출작전 · 안전교육 이수 확인", 800, 1035);
+    context.fillText(
+      `학교 안전 탈출작전 · 함께한 안전 히어로 ${hero.name} · 안전교육 이수 확인`,
+      800,
+      1035,
+    );
 
     canvas.toBlob((blob) => {
       if (!blob) {
@@ -1466,7 +1516,7 @@ export default function Home() {
       announce(
         {
           title: "조금 더 가까이 가세요",
-          message: "왼쪽 조이스틱으로 세이프봇을 단서 가까이 이동한 뒤 A 버튼을 누르세요.",
+          message: "왼쪽 조이스틱으로 캐릭터를 단서 가까이 이동한 뒤 A 버튼을 누르세요.",
           tone: "warn",
         },
         2200,
@@ -1589,7 +1639,7 @@ export default function Home() {
       {phase !== "intro" && phase !== "final" && (
         <header className="hud" aria-label="게임 상태">
           <div className="hud-brand">
-            <img className="hud-avatar" src="assets/safebot-character.png" alt="" />
+            <img className="hud-avatar" src={hero.image} alt="" />
             <div>
               <span className="eyebrow">SAFE SCHOOL</span>
               <strong>학교 안전 탈출작전</strong>
@@ -1689,6 +1739,27 @@ export default function Home() {
               <br />
               여섯 개의 구역에서 안전 미션을 해결하고 모두의 안전한 하교를 도와라.
             </p>
+            <div className="hero-picker" role="radiogroup" aria-label="함께할 안전 히어로 고르기">
+              <b>
+                함께 갈 히어로 고르기
+                <small>{hero.role}</small>
+              </b>
+              <div className="hero-choice-row">
+                {safetyHeroes.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={item.id === hero.id}
+                    className={cx("hero-choice", item.id === hero.id && "selected")}
+                    onClick={() => selectHero(item.id)}
+                  >
+                    <img src={item.image} alt="" loading="lazy" />
+                    <span>{item.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="intro-actions">
               <button className="primary-button hero-button" type="button" onClick={startGame}>
                 <span>미션 시작</span>
@@ -1714,14 +1785,12 @@ export default function Home() {
             )}
           </div>
           <div className="intro-side-card">
-            <img
-              className="safebot-avatar"
-              src="assets/safebot-character.png"
-              alt="안전 안내 로봇 세이프봇"
-            />
-            <div>
-              <span>세이프봇의 메시지</span>
-              <p>“정답을 외우는 것보다 위험을 먼저 발견하는 눈이 중요해!”</p>
+            <div className="hero-preview">
+              <img className="safebot-avatar" src={hero.image} alt={`${hero.name} · ${hero.role}`} />
+              <div>
+                <span>{hero.name}의 메시지</span>
+                <p>“{hero.message}”</p>
+              </div>
             </div>
           </div>
           <div className="intro-footer">
@@ -1758,6 +1827,7 @@ export default function Home() {
               </p>
             </div>
             <div className="scene-frame">
+              <div className="scene-stage">
               <img
                 src="assets/classroom.png"
                 alt="방과 후 교실. 멀티탭, 가방, 책, 가위, 난방기 주변을 살펴볼 수 있다."
@@ -1766,6 +1836,7 @@ export default function Home() {
                 <ExplorerCursor
                   locked={cursorGuideOn && targetLocked}
                   position={playerPosition}
+                  heroImage={hero.image}
                 />
               )}
               <div className="scan-line" aria-hidden="true" />
@@ -1795,6 +1866,7 @@ export default function Home() {
                 );
               })}
               <span className="scene-caption">천천히 관찰하고 의심되는 물건을 클릭하세요</span>
+              </div>
             </div>
           </div>
 
@@ -1937,6 +2009,7 @@ export default function Home() {
               </p>
             </div>
             <div className="scene-frame corridor-frame">
+              <div className="scene-stage">
               <img
                 src="assets/school-corridor.png"
                 alt="학교 복도에서 달리기, 비상구 앞 적치물, 젖은 바닥, 계단 난간 타기 행동을 살펴볼 수 있는 장면"
@@ -1945,6 +2018,7 @@ export default function Home() {
                 <ExplorerCursor
                   locked={cursorGuideOn && targetLocked}
                   position={playerPosition}
+                  heroImage={hero.image}
                 />
               )}
               {corridorHazards.map((hazard) => {
@@ -1975,14 +2049,15 @@ export default function Home() {
               <span className="scene-caption">
                 복도에서는 오른쪽으로 천천히 걷고, 계단 손잡이를 잡아요
               </span>
+              </div>
             </div>
           </div>
 
           <aside className="mission-panel corridor-panel">
             <div className="guide-tip violet-tip">
-              <img src="assets/safebot-character.png" alt="" />
+              <img src={hero.image} alt="" />
               <p>
-                <b>세이프봇</b>
+                <b>{hero.name}</b>
                 “모퉁이와 계단에서는 한 걸음 천천히! 대피 통로는 항상 비워 둬.”
               </p>
             </div>
@@ -2049,6 +2124,7 @@ export default function Home() {
               </p>
             </div>
             <div className="scene-frame">
+              <div className="scene-stage">
               <img
                 src="assets/traffic-school-zone.png"
                 alt="학교 앞 횡단보도에서 스마트폰 보행, 주차 차량 사이 횡단, 안전모 없는 자전거 주행을 살펴볼 수 있는 장면"
@@ -2057,6 +2133,7 @@ export default function Home() {
                 <ExplorerCursor
                   locked={cursorGuideOn && targetLocked}
                   position={playerPosition}
+                  heroImage={hero.image}
                 />
               )}
               {trafficSpots.map((spot) => {
@@ -2091,14 +2168,15 @@ export default function Home() {
               <span className="scene-caption">
                 길을 건널 때는 멈추고, 좌우를 살핀 뒤, 횡단보도로 이동해요
               </span>
+              </div>
             </div>
           </div>
 
           <aside className="mission-panel traffic-panel">
             <div className="guide-tip">
-              <img src="assets/safebot-character.png" alt="" />
+              <img src={hero.image} alt="" />
               <p>
-                <b>세이프봇</b>
+                <b>{hero.name}</b>
                 “안전한 친구와 위험한 친구의 차이를 그림에서 찾아봐!”
               </p>
             </div>
@@ -2247,6 +2325,7 @@ export default function Home() {
               </p>
             </div>
             <div className="scene-frame gym-frame">
+              <div className="scene-stage">
               <img
                 src="assets/school-gym.png"
                 alt="학교 체육관에서 기울어진 매트, 바닥의 줄넘기, 흩어진 공, 풀린 운동화 끈을 살펴볼 수 있는 장면"
@@ -2255,6 +2334,7 @@ export default function Home() {
                 <ExplorerCursor
                   locked={cursorGuideOn && targetLocked}
                   position={playerPosition}
+                  heroImage={hero.image}
                 />
               )}
               {gymHazards.map((hazard) => {
@@ -2289,14 +2369,15 @@ export default function Home() {
               <span className="scene-caption">
                 운동 전에는 몸과 복장을 확인하고, 사용한 기구는 바로 정리해요
               </span>
+              </div>
             </div>
           </div>
 
           <aside className="mission-panel gym-panel">
             <div className="guide-tip lime-tip">
-              <img src="assets/safebot-character.png" alt="" />
+              <img src={hero.image} alt="" />
               <p>
-                <b>세이프봇</b>
+                <b>{hero.name}</b>
                 “바닥의 공과 줄은 바로 정리하고, 운동화 끈도 꼭 확인해!”
               </p>
             </div>
@@ -2363,6 +2444,7 @@ export default function Home() {
               </p>
             </div>
             <div className="scene-frame pool-frame">
+              <div className="scene-stage">
               <img
                 src="assets/school-pool.png"
                 alt="학교 수영장에서 달리기, 밀기, 얕은 곳 다이빙, 혼자 수영하는 행동과 안전한 구명조끼 착용을 살펴볼 수 있는 장면"
@@ -2371,6 +2453,7 @@ export default function Home() {
                 <ExplorerCursor
                   locked={cursorGuideOn && targetLocked}
                   position={playerPosition}
+                  heroImage={hero.image}
                 />
               )}
               {poolSpots.map((spot) => {
@@ -2405,14 +2488,15 @@ export default function Home() {
               <span className="scene-caption">
                 어린이는 보호자·안전요원과 함께 정해진 구역에서 물놀이해요
               </span>
+              </div>
             </div>
           </div>
 
           <aside className="mission-panel pool-panel">
             <div className="guide-tip aqua-tip">
-              <img src="assets/safebot-character.png" alt="" />
+              <img src={hero.image} alt="" />
               <p>
-                <b>세이프봇</b>
+                <b>{hero.name}</b>
                 “물은 즐겁지만 작은 장난도 큰 위험이 될 수 있어!”
               </p>
             </div>
@@ -2544,6 +2628,7 @@ export default function Home() {
               </p>
             </div>
             <div className="scene-frame">
+              <div className="scene-stage">
               <img
                 src="assets/science-lab.png"
                 alt="보안경, 보호장갑, 쏟아진 액체, 열원, 잠긴 캐비닛이 있는 과학실"
@@ -2552,6 +2637,7 @@ export default function Home() {
                 <ExplorerCursor
                   locked={cursorGuideOn && targetLocked}
                   position={playerPosition}
+                  heroImage={hero.image}
                 />
               )}
               {labClues.map((clue) => {
@@ -2597,6 +2683,7 @@ export default function Home() {
                 {labUnlocked ? "해제 완료" : "LOCKED"}
               </button>
               <span className="scene-caption">물건을 클릭하면 안전수칙과 숫자 단서가 나타납니다</span>
+              </div>
             </div>
           </div>
 
@@ -2703,12 +2790,13 @@ export default function Home() {
           </div>
           <div className="final-card">
             <span className="mission-complete">MISSION COMPLETE</span>
-            <div className="final-badge" aria-hidden="true">
-              <span>★</span>
+            <div className="final-badge final-hero-badge" aria-hidden="true">
+              <img src={hero.image} alt="" />
             </div>
             <h1>학교 안전 미션을<br />모두 해결했어요!</h1>
             <p>
-              위험을 발견하고, 침착하게 판단하고, 올바른 순서를 선택했습니다.
+              {withParticle(hero.name)} 함께 위험을 발견하고, 침착하게 판단하고, 올바른 순서를
+              선택했습니다.
               <br />
               이제 당신은 우리 학교의 <b>안전 수호대</b>입니다.
             </p>
@@ -2879,7 +2967,7 @@ export default function Home() {
                     : cursorGuideOn
                       ? targetLocked
                         ? "단서 근처 · A를 누르세요"
-                        : "세이프봇 이동"
+                        : "캐릭터 이동"
                       : "힌트 없이 주변을 탐색하세요"}
                 </span>
               </div>
