@@ -250,10 +250,10 @@ const gymHazards = [
     id: "floor-rope",
     label: "바닥에 방치된 줄넘기",
     icon: "➰",
-    x: 25,
-    y: 47,
+    x: 20,
+    y: 69,
     w: 25,
-    h: 35,
+    h: 17,
     lesson: "사용하지 않는 줄넘기는 바로 정리해 밟거나 걸려 넘어지는 사고를 막아요.",
   },
   {
@@ -270,10 +270,10 @@ const gymHazards = [
     id: "untied-shoe",
     label: "풀린 운동화 끈",
     icon: "👟",
-    x: 77,
-    y: 50,
-    w: 20,
-    h: 37,
+    x: 78,
+    y: 58,
+    w: 13,
+    h: 34,
     lesson: "운동 전 운동화 끈과 복장을 확인하고, 몸에 맞는 운동화를 신어요.",
   },
 ];
@@ -1865,7 +1865,6 @@ export default function Home() {
                   </button>
                 );
               })}
-              <span className="scene-caption">천천히 관찰하고 의심되는 물건을 클릭하세요</span>
               </div>
             </div>
           </div>
@@ -2046,9 +2045,6 @@ export default function Home() {
                   </button>
                 );
               })}
-              <span className="scene-caption">
-                복도에서는 오른쪽으로 천천히 걷고, 계단 손잡이를 잡아요
-              </span>
               </div>
             </div>
           </div>
@@ -2161,13 +2157,6 @@ export default function Home() {
                   </button>
                 );
               })}
-              <div className="safe-role-callout traffic-safe">
-                <span aria-hidden="true">✓</span>
-                <b>안전모 · 멈춤 · 좌우 확인</b>
-              </div>
-              <span className="scene-caption">
-                길을 건널 때는 멈추고, 좌우를 살핀 뒤, 횡단보도로 이동해요
-              </span>
               </div>
             </div>
           </div>
@@ -2362,13 +2351,6 @@ export default function Home() {
                   </button>
                 );
               })}
-              <div className="safe-role-callout gym-safe">
-                <span aria-hidden="true">✓</span>
-                <b>몸 상태 확인 · 준비운동 · 장비 정리</b>
-              </div>
-              <span className="scene-caption">
-                운동 전에는 몸과 복장을 확인하고, 사용한 기구는 바로 정리해요
-              </span>
               </div>
             </div>
           </div>
@@ -2481,13 +2463,6 @@ export default function Home() {
                   </button>
                 );
               })}
-              <div className="safe-role-callout pool-safe">
-                <span aria-hidden="true">✓</span>
-                <b>보호자 · 준비운동 · 구명조끼</b>
-              </div>
-              <span className="scene-caption">
-                어린이는 보호자·안전요원과 함께 정해진 구역에서 물놀이해요
-              </span>
               </div>
             </div>
           </div>
@@ -2682,7 +2657,6 @@ export default function Home() {
                 <span aria-hidden="true">{labUnlocked ? "✓" : "⌑"}</span>
                 {labUnlocked ? "해제 완료" : "LOCKED"}
               </button>
-              <span className="scene-caption">물건을 클릭하면 안전수칙과 숫자 단서가 나타납니다</span>
               </div>
             </div>
           </div>

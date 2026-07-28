@@ -623,14 +623,16 @@ input:focus-visible {
   height: calc(100svh - 128px);
   min-height: 600px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(320px, 28vw, 430px);
+  /* 그림을 최대한 크게 두기 위해 오른쪽 패널 폭을 줄였다 */
+  grid-template-columns: minmax(0, 1fr) clamp(296px, 23vw, 372px);
   background:
     radial-gradient(circle at 15% 30%, rgba(62, 131, 131, 0.09), transparent 34%),
     #081b2d;
 }
 
 .scene-column {
-  padding: clamp(18px, 2.6vw, 38px);
+  /* 위아래 여백을 줄여 그림이 차지할 세로 공간을 넓힌다 */
+  padding: clamp(12px, 1.5vw, 22px) clamp(18px, 2.6vw, 34px);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -641,7 +643,7 @@ input:focus-visible {
   justify-content: space-between;
   gap: 20px;
   align-items: flex-end;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .scene-heading h2 {
@@ -730,20 +732,6 @@ input:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: fill;
-}
-
-.scene-caption {
-  position: absolute;
-  z-index: 3;
-  left: 18px;
-  bottom: 16px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  background: rgba(4, 20, 33, 0.77);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(8px);
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 10px;
 }
 
 .scan-line {
@@ -1421,43 +1409,6 @@ input:focus-visible {
 .traffic-layout,
 .pool-layout {
   grid-template-columns: minmax(0, 1.15fr) clamp(360px, 31vw, 500px);
-}
-
-.safe-role-callout {
-  position: absolute;
-  z-index: 6;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 10px;
-  border-radius: 11px;
-  color: #d9fff5;
-  background: rgba(5, 33, 47, 0.82);
-  border: 1px solid rgba(105, 224, 193, 0.4);
-  backdrop-filter: blur(9px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
-  font-size: 8px;
-}
-
-.safe-role-callout span {
-  width: 19px;
-  height: 19px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  color: #06241f;
-  background: var(--mint);
-  font-weight: 900;
-}
-
-.traffic-safe {
-  right: 4%;
-  bottom: 14%;
-}
-
-.pool-safe {
-  left: 21%;
-  bottom: 12%;
 }
 
 .guide-tip {
@@ -2143,8 +2094,8 @@ input:focus-visible {
 }
 
 .final-card > p {
-  color: rgba(255, 255, 255, 0.74);
-  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
   line-height: 1.8;
 }
 
@@ -2175,7 +2126,7 @@ input:focus-visible {
 .result-board span {
   display: block;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .result-board strong {
@@ -2186,7 +2137,7 @@ input:focus-visible {
 
 .result-board small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .earned-badges {
@@ -2219,7 +2170,7 @@ input:focus-visible {
 .reward-heading span {
   display: block;
   color: var(--mint);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.18em;
 }
@@ -2227,7 +2178,7 @@ input:focus-visible {
 .reward-heading b {
   display: block;
   margin-top: 4px;
-  font-size: 14px;
+  font-size: 17px;
   letter-spacing: -0.02em;
 }
 
@@ -2265,13 +2216,13 @@ input:focus-visible {
 }
 
 .reward-badge-card b {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .reward-badge-card small {
-  margin-top: 2px;
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .reward-medal {
@@ -2905,7 +2856,7 @@ input:focus-visible {
 
 .modal-lead {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
 }
 
@@ -2932,21 +2883,21 @@ input:focus-visible {
 
 .guide-grid h3 {
   margin: 11px 0 9px;
-  font-size: 15px;
+  font-size: 18px;
 }
 
 .guide-grid p,
 .guide-grid small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
 .guide-grid b {
   display: block;
-  margin-top: 17px;
+  margin-top: 15px;
   color: var(--amber);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .guide-grid small {
@@ -3386,16 +3337,17 @@ input:focus-visible {
 
   .scene-frame {
     flex: none;
-    /* 모바일에서는 프레임 자체를 배경 이미지 비율에 맞춰 여백 없이 꽉 채운다 */
+    /* 모바일에서는 프레임 자체를 배경 이미지 비율에 맞추고
+       좌우 여백까지 밀어내 화면 폭을 끝까지 쓴다 */
     aspect-ratio: 1672 / 941;
     height: auto;
     min-height: 0;
-    border-radius: 16px;
-  }
-
-  .scene-caption {
-    padding: 6px 9px;
-    font-size: 9px;
+    margin-left: -14px;
+    margin-right: -14px;
+    width: calc(100% + 28px);
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
   }
 
   .mission-panel {
@@ -3578,19 +3530,6 @@ input:focus-visible {
 
   .found-list {
     grid-template-columns: 1fr;
-  }
-
-  .safe-role-callout {
-    display: none;
-  }
-
-  .scene-caption {
-    left: 10px;
-    right: 10px;
-    /* 아래쪽 위험요소를 가리지 않도록 좁은 화면에서는 위에 붙인다 */
-    top: 8px;
-    bottom: auto;
-    text-align: center;
   }
 
   .hotspot > b {
