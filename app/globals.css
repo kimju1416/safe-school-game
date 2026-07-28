@@ -151,6 +151,45 @@ input:focus-visible {
   transform: translateY(-1px);
 }
 
+/* 홍보가 아니라 출처 한 줄처럼 — 평소엔 흐리게, 눈길이 닿으면 또렷해진다 */
+.quiet-credit {
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.quiet-credit:hover,
+.quiet-credit:focus-visible {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.quiet-credit .instagram-mark {
+  width: 13px;
+  height: 13px;
+  border-width: 1.5px;
+  border-radius: 4px;
+}
+
+.quiet-credit .instagram-mark::before {
+  width: 4px;
+  height: 4px;
+  border-width: 1.5px;
+}
+
+.quiet-credit .instagram-mark::after {
+  top: 2px;
+  right: 2px;
+  width: 2px;
+  height: 2px;
+}
+
+/* 마지막 화면에서는 버튼 아래에 한 줄로 조용히 남긴다 */
+.final-card > .quiet-credit {
+  margin-top: 20px;
+}
+
 .instagram-mark {
   position: relative;
   width: 19px;

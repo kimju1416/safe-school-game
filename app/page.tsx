@@ -1800,7 +1800,7 @@ export default function Home() {
                 생활안전 · 복도안전 · 교통안전 · 체육안전 · 물놀이안전 · 실험안전
               </span>
               <a
-                className="creator-credit"
+                className="creator-credit quiet-credit"
                 href="https://www.instagram.com/kimju.zip/"
                 target="_blank"
                 rel="noreferrer"
@@ -2820,6 +2820,16 @@ export default function Home() {
                 배운 내용 정리
               </button>
             </div>
+            <a
+              className="creator-credit quiet-credit"
+              href="https://www.instagram.com/kimju.zip/"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="제작자 kimju.zip 인스타그램 열기"
+            >
+              <i className="instagram-mark" aria-hidden="true" />
+              <span>만든이 · @kimju.zip</span>
+            </a>
           </div>
         </section>
       )}
