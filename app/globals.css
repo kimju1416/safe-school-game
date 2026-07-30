@@ -738,6 +738,7 @@ input:focus-visible {
   background: #132d43;
   box-shadow: var(--shadow);
   isolation: isolate;
+  container-type: size;
 }
 
 .scene-frame::before {
@@ -757,11 +758,11 @@ input:focus-visible {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  /* 컨테이너에 딱 맞게 들어가는 최대 크기를 직접 계산한다.
+     aspect-ratio + max-width 조합은 제약이 걸리는 순간 비율이 깨져 그림이 늘어난다. */
+  width: min(100cqw, calc(100cqh * 1672 / 941));
+  height: min(100cqh, calc(100cqw / (1672 / 941)));
   aspect-ratio: 1672 / 941;
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  max-height: 100%;
   overflow: hidden;
 }
 
@@ -3013,6 +3014,14 @@ input:focus-visible {
 
   .scene-column {
     min-height: 64vw;
+  }
+
+  /* 세로로 쌓이면 프레임 높이가 0이 되므로 비율로 직접 잡아 준다 */
+  .scene-frame {
+    flex: none;
+    aspect-ratio: 1672 / 941;
+    height: auto;
+    min-height: 0;
   }
 
   .mission-panel {
